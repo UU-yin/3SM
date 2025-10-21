@@ -402,7 +402,7 @@ if data is not None and len(data) > 0:
     def classify_data(row):
         if abs(row['Z值']) <= 2:
             return 'Satisfactory'
-        elif 2 < abs(row['Z值]) <= 3:
+        elif 2 < abs(row['Z值']) <= 3:
             return 'Questionable'
         else:
             return 'Unsatisfactory'
