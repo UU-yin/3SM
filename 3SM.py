@@ -392,6 +392,10 @@ if data is not None and len(data) > 0:
     # 可视化 - 使用新的Z值柱状图
     st.subheader("📊 数据可视化")
     
+    # 字体
+    plt.rcParams['font.sans-serif'] = ['SimHei', 'DejaVu Sans'] # 使用黑体，并设置备用字体
+    plt.rcParams['axes.unicode_minus'] = False # 解决负号显示问题:cite[1]
+    
     # 创建数据框用于可视化
     df_clean = pd.DataFrame({
         '原始数据': data,
