@@ -370,7 +370,9 @@ if data is not None and len(data) > 0:
         st.write(f"**收敛状态**: {'是' if results['converged'] else '否'}")
     
     if len(results['outliers']) > 0:
-        st.write(f"**离群值**: {sorted(results['outliers'])}")
+        # 将np.float64转换为Python原生float类型
+        outliers_list = [float(x) for x in sorted(results['outliers'])]
+        st.write(f"**离群值**: {outliers_list}")
     else:
         st.write("**离群值**: 无")
     
@@ -524,7 +526,7 @@ if data is not None and len(data) > 0:
 
 离群值列表:
 ----------
-{', '.join(map(str, results['outliers']))}
+{', '.join([str(float(x)) for x in results['outliers']])}
 """
     
     st.download_button(
