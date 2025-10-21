@@ -440,7 +440,7 @@ if data is not None and len(data) > 0:
     # 设置图形属性
     ax.set_xlabel('Z-Score', fontsize=14, fontweight='bold')
     ax.set_ylabel('Data ID', fontsize=14, fontweight='bold')
-    ax.set_title(f'{method} - Z-Score Distribution', fontsize=16, fontweight='bold')
+    ax.set_title('Z-Score Distribution', fontsize=16, fontweight='bold')
     
     # 添加零线参考线
     ax.axvline(x=0, color='black', linestyle='-', alpha=0.5, linewidth=1)
