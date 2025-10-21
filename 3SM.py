@@ -411,6 +411,9 @@ if data is not None and len(data) > 0:
     
     df_clean['Category'] = df_clean.apply(classify_data, axis=1)
     
+    # 按照Z值从大到小排序
+    df_sorted = df_clean.sort_values('Z_Score', ascending=False)    
+    
     # 创建Z值柱状图
     fig, ax = plt.subplots(figsize=(14, 10))
     
