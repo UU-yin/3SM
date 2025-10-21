@@ -407,7 +407,7 @@ if data is not None and len(data) > 0:
         else:
             return 'Unsatisfactory'
     
-    df_clean['类别'] = df_clean.apply(classify_data, axis=1)
+    df_clean['Category'] = df_clean.apply(classify_data, axis=1)
     
     # 创建Z值柱状图
     fig, ax = plt.subplots(figsize=(14, 10))
@@ -422,7 +422,7 @@ if data is not None and len(data) > 0:
     
     # 为每个类别创建柱状图
     for category, color in color_map.items():
-        category_data = df_clean[df_clean['类别'] == category]
+        category_data = df_clean[df_clean['Category'] == category]
         if not category_data.empty:
             # 使用原始数据编号作为Y轴标签
             bars = ax.barh([str(idx) for idx in category_data.index], 
@@ -455,7 +455,7 @@ if data is not None and len(data) > 0:
     ax.grid(axis='x', alpha=0.3, linestyle='--')
     
     # 添加图例
-    ax.legend(title='类别', title_fontsize=12, fontsize=11, loc='upper right')
+    ax.legend(title='Category', title_fontsize=12, fontsize=11, loc='upper right')
     
     # 调整布局
     plt.tight_layout()
