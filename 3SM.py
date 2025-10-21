@@ -392,10 +392,6 @@ if data is not None and len(data) > 0:
     # 可视化 - 使用新的Z值柱状图
     st.subheader("📊 数据可视化")
     
-    # 字体
-    plt.rcParams['font.sans-serif'] = ['SimHei', 'DejaVu Sans'] # 使用黑体，并设置备用字体
-    plt.rcParams['axes.unicode_minus'] = False # 解决负号显示问题:cite[1]
-    
     # 创建数据框用于可视化
     df_clean = pd.DataFrame({
         '原始数据': data,
@@ -405,11 +401,11 @@ if data is not None and len(data) > 0:
     # 根据Z值进行分类
     def classify_data(row):
         if abs(row['Z值']) <= 2:
-            return '满意'
-        elif 2 < abs(row['Z值']) <= 3:
-            return '可疑'
+            return 'Satisfactory'
+        elif 2 < abs(row['Z值]) <= 3:
+            return 'Questionable'
         else:
-            return '不满意'
+            return 'Unsatisfactory'
     
     df_clean['类别'] = df_clean.apply(classify_data, axis=1)
     
@@ -418,9 +414,10 @@ if data is not None and len(data) > 0:
     
     # 设置类别对应的颜色
     color_map = {
-        '满意': '#2E8B57',    # 海绿色
-        '可疑': '#FFA500',    # 橙色
-        '不满意': '#DC143C'    # 猩红色
+        'Satisfactory': '#2E8B57',    # 满意
+        'Questionable': '#FFA500',    # 可疑
+        'Unsatisfactory': '#DC143C'   # 不满意
+
     }
     
     # 为每个类别创建柱状图
@@ -441,9 +438,9 @@ if data is not None and len(data) > 0:
                         va='center', fontsize=9, fontweight='bold')
     
     # 设置图形属性
-    ax.set_xlabel('Z值', fontsize=14, fontweight='bold')
-    ax.set_ylabel('原始数据编号', fontsize=14, fontweight='bold')
-    ax.set_title(f'{method} - Z值分布图', fontsize=16, fontweight='bold')
+    ax.set_xlabel('Z-Score', fontsize=14, fontweight='bold')
+    ax.set_ylabel('Data ID', fontsize=14, fontweight='bold')
+    ax.set_title(f'{method} - Z-Score Distribution', fontsize=16, fontweight='bold')
     
     # 添加零线参考线
     ax.axvline(x=0, color='black', linestyle='-', alpha=0.5, linewidth=1)
