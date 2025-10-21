@@ -10,6 +10,7 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import io
+from scipy import stats
 
 # 设置页面
 st.set_page_config(
@@ -388,66 +389,77 @@ if data is not None and len(data) > 0:
     with col3:
         st.metric("不满意 (|Z| > 3)", f"{unsatisfactory} 个")
     
-    # 可视化
+    # 可视化 - 使用新的Z值柱状图
     st.subheader("📊 数据可视化")
     
-    fig, ax = plt.subplots(figsize=(12, 8))
+    # 创建数据框用于可视化
+    df_clean = pd.DataFrame({
+        '原始数据': data,
+        'Z值': results['Z_scores']
+    })
     
-    # 准备数据
-    indices = np.arange(1, len(data) + 1)
-    z_scores = results['Z_scores']
-    
-    # 根据Z值分类设置颜色
-    colors = []
-    for z in z_scores:
-        if abs(z) <= 2:
-            colors.append('green')
-        elif abs(z) <= 3:
-            colors.append('orange')
+    # 根据Z值进行分类
+    def classify_data(row):
+        if abs(row['Z值']) <= 2:
+            return '满意'
+        elif 2 < abs(row['Z值']) <= 3:
+            return '可疑'
         else:
-            colors.append('red')
+            return '不满意'
     
-    # 创建水平柱状图
-    bars = ax.barh(indices, z_scores, color=colors, alpha=0.7, edgecolor='black', linewidth=0.5)
+    df_clean['类别'] = df_clean.apply(classify_data, axis=1)
     
-    # 在每个柱子上标注Z值
-    for i, (bar, z) in enumerate(zip(bars, z_scores)):
-        width = bar.get_width()
-        ha = 'left' if width >= 0 else 'right'
-        x_pos = width + 0.05 if width >= 0 else width - 0.05
-        ax.text(x_pos, bar.get_y() + bar.get_height()/2, 
-                f'{z:.2f}', 
-                ha=ha, va='center', fontsize=8, fontweight='bold')
+    # 创建Z值柱状图
+    fig, ax = plt.subplots(figsize=(14, 10))
     
-    # 设置坐标轴和标签
-    ax.set_xlabel('Z比分数', fontsize=12, fontweight='bold')
-    ax.set_ylabel('数据编号', fontsize=12, fontweight='bold')
-    ax.set_title(f'{method} - Z比分数分布图', fontsize=14, fontweight='bold', pad=20)
+    # 设置类别对应的颜色
+    color_map = {
+        '满意': '#2E8B57',    # 海绿色
+        '可疑': '#FFA500',    # 橙色
+        '不满意': '#DC143C'    # 猩红色
+    }
     
-    # 设置y轴刻度为数据编号
-    ax.set_yticks(indices)
-    ax.set_yticklabels([f'数据{i}' for i in indices], fontsize=8)
+    # 为每个类别创建柱状图
+    for category, color in color_map.items():
+        category_data = df_clean[df_clean['类别'] == category]
+        if not category_data.empty:
+            # 使用原始数据编号作为Y轴标签
+            bars = ax.barh([str(idx) for idx in category_data.index], 
+                          category_data['Z值'], 
+                          color=color, alpha=0.7, label=category, height=0.8)
+            
+            # 在柱状图上标注Z值
+            for bar, z_value in zip(bars, category_data['Z值']):
+                plt.text(bar.get_width() + 0.05 * (1 if bar.get_width() >= 0 else -1), 
+                        bar.get_y() + bar.get_height()/2, 
+                        f'{z_value:.2f}', 
+                        ha='left' if bar.get_width() >= 0 else 'right', 
+                        va='center', fontsize=9, fontweight='bold')
     
-    # 添加参考线
-    ax.axvline(x=0, color='black', linestyle='-', alpha=0.8, linewidth=1)
-    for z in [-3, -2, 2, 3]:
-        color = 'red' if abs(z) == 3 else 'orange'
-        ax.axvline(x=z, color=color, linestyle='--', alpha=0.7, linewidth=1)
+    # 设置图形属性
+    ax.set_xlabel('Z值', fontsize=14, fontweight='bold')
+    ax.set_ylabel('原始数据编号', fontsize=14, fontweight='bold')
+    ax.set_title(f'{method} - Z值分布图', fontsize=16, fontweight='bold')
+    
+    # 添加零线参考线
+    ax.axvline(x=0, color='black', linestyle='-', alpha=0.5, linewidth=1)
+    
+    # 添加阈值线
+    ax.axvline(x=-2, color='gray', linestyle='--', alpha=0.7, linewidth=0.8)
+    ax.axvline(x=2, color='gray', linestyle='--', alpha=0.7, linewidth=0.8)
+    ax.axvline(x=-3, color='red', linestyle='--', alpha=0.7, linewidth=0.8)
+    ax.axvline(x=3, color='red', linestyle='--', alpha=0.7, linewidth=0.8)
+    
+    # 添加网格
+    ax.grid(axis='x', alpha=0.3, linestyle='--')
     
     # 添加图例
-    from matplotlib.patches import Patch
-    legend_elements = [
-        Patch(facecolor='green', alpha=0.7, label='满意 (|Z| ≤ 2)'),
-        Patch(facecolor='orange', alpha=0.7, label='可疑 (2 < |Z| ≤ 3)'),
-        Patch(facecolor='red', alpha=0.7, label='不满意 (|Z| > 3)')
-    ]
-    ax.legend(handles=legend_elements, loc='upper right', framealpha=0.9)
+    ax.legend(title='类别', title_fontsize=12, fontsize=11, loc='upper right')
     
-    # 设置网格
-    ax.grid(True, alpha=0.3, axis='x')
-    ax.set_axisbelow(True)
-    
+    # 调整布局
     plt.tight_layout()
+    
+    # 显示图表
     st.pyplot(fig)
     
     # 导出功能
