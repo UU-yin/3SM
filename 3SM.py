@@ -396,23 +396,34 @@ if data is not None and len(data) > 0:
     
     # 创建数据框用于可视化
     df_clean = pd.DataFrame({
-        '原始数据': data,
-        'Z值': results['Z_scores']
+        'Original_Data': data,
+        'Z_Score': results['Z_scores']
     })
     
     # 根据Z值进行分类
     def classify_data(row):
-        if abs(row['Z值']) <= 2:
+        if abs(row['Z_Score']) <= 2:
             return 'Satisfactory'
-        elif 2 < abs(row['Z值']) <= 3:
+        elif 2 < abs(row['Z_Score']) <= 3:
             return 'Questionable'
         else:
             return 'Unsatisfactory'
     
     df_clean['Category'] = df_clean.apply(classify_data, axis=1)
     
-    # 按照Z值从大到小排序
-    df_sorted = df_clean.sort_values('Z_Score', ascending=False)    
+    # 确保列名正确，然后按照Z值从大到小排序
+    # 首先检查列名是否存在
+    if 'Z_Score' in df_clean.columns:
+        df_sorted = df_clean.sort_values('Z_Score', ascending=False)
+    else:
+    # 如果列名不是 'Z_Score'，尝试其他可能的列名
+        st.error(f"列名 'Z_Score' 不存在。可用的列名: {list(df_clean.columns)}")
+    # 使用第一个数值列进行排序
+        numeric_cols = df_clean.select_dtypes(include=[np.number]).columns
+        if len(numeric_cols) > 0:
+            df_sorted = df_clean.sort_values(numeric_cols[0], ascending=False)
+        else:
+            df_sorted = df_clean
     
     # 创建Z值柱状图
     fig, ax = plt.subplots(figsize=(14, 10))
@@ -431,11 +442,11 @@ if data is not None and len(data) > 0:
         if not category_data.empty:
             # 使用原始数据编号作为Y轴标签
             bars = ax.barh([str(idx) for idx in category_data.index], 
-                          category_data['Z值'], 
+                          category_data['Z_Score'], 
                           color=color, alpha=0.7, label=category, height=0.8)
             
             # 在柱状图上标注Z值
-            for bar, z_value in zip(bars, category_data['Z值']):
+            for bar, z_value in zip(bars, category_data['Z_Score']):
                 plt.text(bar.get_width() + 0.05 * (1 if bar.get_width() >= 0 else -1), 
                         bar.get_y() + bar.get_height()/2, 
                         f'{z_value:.2f}', 
