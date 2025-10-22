@@ -53,12 +53,15 @@ data = None
 if input_method == "手动输入":
     st.subheader("📝 手动输入数据")
     
-    # 使用session_state来存储输入数据和历史记录
+    # 初始化会话状态
     if 'manual_data' not in st.session_state:
         st.session_state.manual_data = "54.4, 54.6, 54.2, 54.3, 53.9, 54.4, 54.3, 54.6, 54.5, 54.3, 54.5, 54.1, 54.2, 54.3, 54.8, 54.8, 54.8, 54.3, 54.4, 54.3, 54.3, 54.7, 54.4, 54.5, 54.4, 55.0, 55.0, 55.1, 54.1, 54.8, 54.5, 55.5, 55.6, 55.0, 54.3, 55.3, 54.3, 54.4, 54.3, 54.4, 54.5, 55.9, 53.2, 54.6"
     
     if 'data_history' not in st.session_state:
         st.session_state.data_history = [st.session_state.manual_data]
+    
+    if 'data_loaded' not in st.session_state:
+        st.session_state.data_loaded = False
     
     # 数据输入框
     data_input = st.text_area(
@@ -93,6 +96,7 @@ if input_method == "手动输入":
                     data_list = [float(x.strip()) for x in data_input.split(",") if x.strip()]
                 
                 data = np.array(data_list)
+                st.session_state.data_loaded = True
                 st.success(f"成功解析 {len(data)} 个数据点")
                 
             except ValueError as e:
@@ -107,6 +111,8 @@ if input_method == "手动输入":
             # 保存当前状态到历史记录
             st.session_state.data_history.append(st.session_state.manual_data)
             st.session_state.manual_data = ""
+            st.session_state.data_loaded = False
+            # 使用rerun刷新页面
             st.rerun()
     
     with col3:
@@ -121,7 +127,21 @@ if input_method == "手动输入":
                 st.session_state.data_history.pop()
                 # 恢复到上一个状态
                 st.session_state.manual_data = st.session_state.data_history[-1]
+                st.session_state.data_loaded = False
+                # 使用rerun刷新页面
                 st.rerun()
+    
+    # 如果数据已加载，设置data变量
+    if st.session_state.data_loaded:
+        try:
+            if "\n" in st.session_state.manual_data:
+                data_list = [float(x.strip()) for x in st.session_state.manual_data.split("\n") if x.strip()]
+            else:
+                data_list = [float(x.strip()) for x in st.session_state.manual_data.split(",") if x.strip()]
+            
+            data = np.array(data_list)
+        except:
+            st.session_state.data_loaded = False
 
 elif input_method == "文件上传":
     st.subheader("📁 上传数据文件")
