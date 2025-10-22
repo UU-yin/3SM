@@ -167,26 +167,6 @@ elif input_method == "文件上传":
                 df = pd.read_csv(uploaded_file)
                 # 假设第一列是数据
                 data = df.iloc[:, 0].values
-                st.success(f"成功加载 {len(data)} 个数据点")
-                st.write("前10个数据:", data[:10])
-            else:
-                # 文本文件，每行一个数字
-                content = uploaded_file.read().decode()
-                data_list = [float(x.strip()) for x in content.split() if x.strip()]
-                data = np.array(data_list)
-                st.success(f"成功加载 {len(data)} 个数据点")
-                st.write("前10个数据:", data[:10])
-            
-        except Exception as e:
-            st.error(f"文件读取错误: {e}")
-            st.info("请确保文件格式正确：每行一个数值，且均为有效数字")         
-    
-    if uploaded_file is not None:
-        try:
-            if uploaded_file.name.endswith('.csv'):
-                df = pd.read_csv(uploaded_file)
-                # 假设第一列是数据
-                data = df.iloc[:, 0].values
             else:
                 # 文本文件，每行一个数字
                 content = uploaded_file.read().decode()
@@ -198,6 +178,7 @@ elif input_method == "文件上传":
             
         except Exception as e:
             st.error(f"文件读取错误: {e}")
+            st.info("请确保文件格式正确：每行一个数值，且均为有效数字")
 
 else:  # 示例数据
     st.subheader("🎯 示例数据分析")
@@ -524,14 +505,14 @@ if data is not None and len(data) > 0:
         st.metric("不满意 (|Z| > 3)", f"{unsatisfactory} 个")
     
     # 可视化 - 使用新的Z值柱状图
-    st.subheader("📊 Data Visualization")
-
+    st.subheader("数据可视化")
+    
     # 创建数据框用于可视化
     df_clean = pd.DataFrame({
         'Original_Data': data,
         'Z_Score': results['Z_scores']
     })
-
+    
     # 根据Z值进行分类
     def classify_data(row):
         if abs(row['Z_Score']) <= 2:
@@ -540,89 +521,91 @@ if data is not None and len(data) > 0:
             return 'Questionable'
         else:
             return 'Unsatisfactory'
-
+    
     df_clean['Category'] = df_clean.apply(classify_data, axis=1)
-
+    
     # 按照Z值从大到小排序
     df_sorted = df_clean.sort_values('Z_Score', ascending=False)
-
-    # 创建Z值柱状图
-    fig, ax = plt.subplots(figsize=(14, 12))
-
-    # 设置类别对应的马卡龙颜色
+    
+    # 创建Z值柱状图 - 增加高度为图例留出空间
+    fig, ax = plt.subplots(figsize=(14, 14))  # 增加高度
+    
+    # 设置类别对应的高饱和度颜色
     color_map = {
-        'Satisfactory': '#A8E6CF',    # 马卡龙薄荷绿
-        'Questionable': '#FFD3B6',    # 马卡龙珊瑚橙
-        'Unsatisfactory': '#FFAAA5'    # 马卡龙淡粉色
+        'Satisfactory': '#00FF00',    # 高饱和度绿色
+        'Questionable': '#FFA500',    # 高饱和度橙色
+        'Unsatisfactory': '#FF0000'    # 高饱和度红色
     }
-
+    
     # 创建一个统一颜色的列表
     colors = [color_map[cat] for cat in df_sorted['Category']]
-
+    
     # 绘制所有数据点的柱状图，按Z值排序
     y_positions = range(len(df_sorted))
     bars = ax.barh(y_positions, 
                    df_sorted['Z_Score'], 
                    color=colors, 
-                   alpha=0.8,  # 稍微提高透明度使颜色更柔和
+                   alpha=0.9,  # 提高透明度使颜色更鲜艳
                    height=0.8,
-                   edgecolor='white',  # 添加白色边框使柱状图更清晰
-                   linewidth=0.5)
-
+                   edgecolor='black',  # 添加黑色边框使柱状图更清晰
+                   linewidth=0.3)
+    
     # 在柱状图上标注Z值
     for i, (bar, z_value) in enumerate(zip(bars, df_sorted['Z_Score'])):
-        # 根据背景色调整文字颜色，确保可读性
-        text_color = 'black' if z_value >= 0 else 'black'
+        # 使用白色文字确保在高饱和度背景上可读
+        text_color = 'white'
         ax.text(bar.get_width() + 0.05 * (1 if bar.get_width() >= 0 else -1), 
                 bar.get_y() + bar.get_height()/2, 
                 f'{z_value:.2f}', 
                 ha='left' if bar.get_width() >= 0 else 'right', 
                 va='center', fontsize=9, fontweight='bold',
                 color=text_color)
-
+    
     # 设置图形属性
     ax.set_xlabel('Z-Score', fontsize=14, fontweight='bold')
     ax.set_ylabel('Original Data ID', fontsize=14, fontweight='bold')
-    ax.set_title('Z-Score Distribution (Sorted)', fontsize=16, fontweight='bold', pad=20)
-
-    # 添加图例 - 放在标题和图表之间
+    ax.set_title('Z-Score Distribution (Sorted)', fontsize=16, fontweight='bold', pad=30)  # 增加标题的pad值
+    
+    # 添加图例 - 放在图表上方，标题下方
     from matplotlib.patches import Patch
     legend_elements = [
         Patch(facecolor=color_map['Satisfactory'], label='Satisfactory (|Z| ≤ 2)'),
         Patch(facecolor=color_map['Questionable'], label='Questionable (2 < |Z| ≤ 3)'),
         Patch(facecolor=color_map['Unsatisfactory'], label='Unsatisfactory (|Z| > 3)')
     ]
+    
+    # 将图例放在图表上方，标题下方
     ax.legend(handles=legend_elements, title='Category', title_fontsize=12, fontsize=11, 
-              loc='upper center', bbox_to_anchor=(0.5, 0.98), ncol=3, frameon=True)
-
+              loc='upper center', bbox_to_anchor=(0.5, 1.05), ncol=3, frameon=True)
+    
     # 设置Y轴刻度 - 使用原始数据编号作为标签
     ax.set_yticks(y_positions)
     ax.set_yticklabels([f"{idx}" for idx in df_sorted.index])
-
+    
     # 添加零线参考线
     ax.axvline(x=0, color='black', linestyle='-', alpha=0.5, linewidth=1)
-
+    
     # 添加阈值线
     ax.axvline(x=-2, color='gray', linestyle='--', alpha=0.7, linewidth=0.8)
     ax.axvline(x=2, color='gray', linestyle='--', alpha=0.7, linewidth=0.8)
-    ax.axvline(x=-3, color='#FF8B94', linestyle='--', alpha=0.7, linewidth=0.8)  # 使用马卡龙红色
-    ax.axvline(x=3, color='#FF8B94', linestyle='--', alpha=0.7, linewidth=0.8)   # 使用马卡龙红色
-
+    ax.axvline(x=-3, color='red', linestyle='--', alpha=0.7, linewidth=0.8)  # 使用红色
+    ax.axvline(x=3, color='red', linestyle='--', alpha=0.7, linewidth=0.8)   # 使用红色
+    
     # 添加网格
     ax.grid(axis='x', alpha=0.3, linestyle='--')
-
+    
     # 反转Y轴，使最大的Z值在顶部
     ax.invert_yaxis()
-
-    # 调整子图参数，为顶部图例留出更多空间
-    plt.subplots_adjust(top=0.9)
-
-    # 设置背景色为更柔和的颜色
-    ax.set_facecolor('#F8F9FA')  # 非常浅的灰色背景
-
+    
+    # 设置背景色为白色，使高饱和度颜色更加突出
+    ax.set_facecolor('white')
+    
+    # 调整子图参数，为顶部图例和标题留出更多空间
+    plt.subplots_adjust(top=0.85)  # 调整这个值直到图例不再遮挡柱状图
+    
     # 调整布局
     plt.tight_layout()
-
+    
     # 显示图表
     st.pyplot(fig)
     
