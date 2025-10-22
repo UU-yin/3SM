@@ -456,51 +456,43 @@ def q_hampel_robust_algorithm(data):
         'weights': weights if 'weights' in locals() else np.ones_like(data)
     }
 
-# 执行分析 - 修改数据检查逻辑
-if data is not None:
-    # 更健壮的数据检查
-    try:
-        data_array = np.array(data)
-        valid_data = len(data_array) > 0 and np.issubdtype(data_array.dtype, np.number)
-    except:
-        valid_data = False
+# 执行分析
+if data is not None and len(data) > 0:
+    st.markdown("---")
+    st.subheader(f"📈 {method}分析结果")
     
-    if valid_data:
-        st.markdown("---")
-        st.subheader(f"📈 {method}分析结果")
-        
-        with st.spinner(f"正在执行{method}分析..."):
-            if method == "迭代稳健统计法":
-                results = iterative_robust_algorithm(data, max_iterations=max_iter, k=k_value)
-            elif method == "四分位稳健统计法":
-                results = quartile_robust_algorithm(data)
-            else:  # Q/Hampel法
-                results = q_hampel_robust_algorithm(data)
-        
-        # 创建两列布局
-        col1, col2 = st.columns(2)
-        
-        with col1:
-            st.metric("稳健平均值", f"{results['robust_mean']:.6f}")
-            st.metric("稳健标准差", f"{results['robust_std']:.6f}")
-            
-        with col2:
-            if 'iterations' in results:
-                st.metric("迭代次数", results['iterations'])
-            st.metric("离群值数量", len(results['outliers']))
-        
-        # ... 其余的分析结果显示代码保持不变 ...
-        
-    else:
-        st.error("❌ 数据无效或为空，请检查输入的数据格式")
-else:
-    st.info("👆 请先输入或上传数据以开始分析")
+    with st.spinner(f"正在执行{method}分析..."):
+        if method == "迭代稳健统计法":
+            results = iterative_robust_algorithm(data, max_iterations=max_iter, k=k_value)
+        elif method == "四分位稳健统计法":
+            results = quartile_robust_algorithm(data)
+        else:  # Q/Hampel法
+            results = q_hampel_robust_algorithm(data)
     
-# 调试信息（临时添加）
-st.write("数据类型:", type(data))
-if data is not None:
-    st.write("数据长度:", len(data))
-    st.write("数据内容:", data)    
+    # 创建两列布局
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        st.metric("稳健平均值", f"{results['robust_mean']:.6f}")
+        st.metric("稳健标准差", f"{results['robust_std']:.6f}")
+        
+    with col2:
+        if 'iterations' in results:
+            st.metric("迭代次数", results['iterations'])
+        st.metric("离群值数量", len(results['outliers']))
+    
+    # 方法特定结果显示
+    if method == "四分位稳健统计法":
+        st.info("📊 **四分位统计量:**")
+        col3, col4, col5, col6 = st.columns(4)
+        with col3:
+            st.metric("下四分位数(Q1)", f"{results['q1']:.6f}")
+        with col4:
+            st.metric("上四分位数(Q3)", f"{results['q3']:.6f}")
+        with col5:
+            st.metric("四分位距(IQR)", f"{results['iqr']:.6f}")
+        with col6:
+            st.metric("标准化四分位距(NIQR)", f"{results['niqr']:.6f}")
     
     # 详细结果
     st.subheader("📋 详细结果")
@@ -554,58 +546,46 @@ if data is not None:
     # 按照Z值从大到小排序
     df_sorted = df_clean.sort_values('Z_Score', ascending=False)
 
-    # 创建Z值柱状图 - 增加图形高度，特别是顶部边距
+    # 创建Z值柱状图
     fig, ax = plt.subplots(figsize=(14, 12))
 
-    # 设置类别对应的颜色
+    # 设置类别对应的马卡龙颜色
     color_map = {
-        'Satisfactory': '#2E8B57',    # 绿色
-        'Questionable': '#FFA500',    # 橙色
-        'Unsatisfactory': '#DC143C'    # 红色
+        'Satisfactory': '#A8E6CF',    # 马卡龙薄荷绿
+        'Questionable': '#FFD3B6',    # 马卡龙珊瑚橙
+        'Unsatisfactory': '#FFAAA5'    # 马卡龙淡粉色
     }
 
     # 创建一个统一颜色的列表
     colors = [color_map[cat] for cat in df_sorted['Category']]
 
     # 绘制所有数据点的柱状图，按Z值排序
-    # 使用排序后的索引位置作为Y轴位置
     y_positions = range(len(df_sorted))
     bars = ax.barh(y_positions, 
                    df_sorted['Z_Score'], 
                    color=colors, 
-                   alpha=0.7, 
-                   height=0.8)
+                   alpha=0.8,  # 稍微提高透明度使颜色更柔和
+                   height=0.8,
+                   edgecolor='white',  # 添加白色边框使柱状图更清晰
+                   linewidth=0.5)
 
     # 在柱状图上标注Z值
     for i, (bar, z_value) in enumerate(zip(bars, df_sorted['Z_Score'])):
+        # 根据背景色调整文字颜色，确保可读性
+        text_color = 'black' if z_value >= 0 else 'black'
         ax.text(bar.get_width() + 0.05 * (1 if bar.get_width() >= 0 else -1), 
                 bar.get_y() + bar.get_height()/2, 
                 f'{z_value:.2f}', 
                 ha='left' if bar.get_width() >= 0 else 'right', 
-                va='center', fontsize=9, fontweight='bold')
+                va='center', fontsize=9, fontweight='bold',
+                color=text_color)
 
     # 设置图形属性
     ax.set_xlabel('Z-Score', fontsize=14, fontweight='bold')
     ax.set_ylabel('Original Data ID', fontsize=14, fontweight='bold')
     ax.set_title('Z-Score Distribution (Sorted)', fontsize=16, fontweight='bold', pad=20)
 
-    # 设置Y轴刻度 - 使用原始数据编号作为标签
-    ax.set_yticks(y_positions)
-    ax.set_yticklabels([f"Data {idx}" for idx in df_sorted.index])
-
-    # 添加零线参考线
-    ax.axvline(x=0, color='black', linestyle='-', alpha=0.5, linewidth=1)
-
-    # 添加阈值线
-    ax.axvline(x=-2, color='gray', linestyle='--', alpha=0.7, linewidth=0.8)
-    ax.axvline(x=2, color='gray', linestyle='--', alpha=0.7, linewidth=0.8)
-    ax.axvline(x=-3, color='red', linestyle='--', alpha=0.7, linewidth=0.8)
-    ax.axvline(x=3, color='red', linestyle='--', alpha=0.7, linewidth=0.8)
-
-    # 添加网格
-    ax.grid(axis='x', alpha=0.3, linestyle='--')
-
-    # 添加图例 - 使用颜色映射创建图例，放在图表底部
+    # 添加图例 - 放在标题和图表之间
     from matplotlib.patches import Patch
     legend_elements = [
         Patch(facecolor=color_map['Satisfactory'], label='Satisfactory (|Z| ≤ 2)'),
@@ -613,19 +593,76 @@ if data is not None:
         Patch(facecolor=color_map['Unsatisfactory'], label='Unsatisfactory (|Z| > 3)')
     ]
     ax.legend(handles=legend_elements, title='Category', title_fontsize=12, fontsize=11, 
-              loc='upper center', bbox_to_anchor=(0.5, -0.1), ncol=3)
+              loc='upper center', bbox_to_anchor=(0.5, 0.98), ncol=3, frameon=True)
+
+    # 设置Y轴刻度 - 使用原始数据编号作为标签
+    ax.set_yticks(y_positions)
+    ax.set_yticklabels([f"{idx}" for idx in df_sorted.index])
+
+    # 添加零线参考线
+    ax.axvline(x=0, color='black', linestyle='-', alpha=0.5, linewidth=1)
+
+    # 添加阈值线
+    ax.axvline(x=-2, color='gray', linestyle='--', alpha=0.7, linewidth=0.8)
+    ax.axvline(x=2, color='gray', linestyle='--', alpha=0.7, linewidth=0.8)
+    ax.axvline(x=-3, color='#FF8B94', linestyle='--', alpha=0.7, linewidth=0.8)  # 使用马卡龙红色
+    ax.axvline(x=3, color='#FF8B94', linestyle='--', alpha=0.7, linewidth=0.8)   # 使用马卡龙红色
+
+    # 添加网格
+    ax.grid(axis='x', alpha=0.3, linestyle='--')
 
     # 反转Y轴，使最大的Z值在顶部
     ax.invert_yaxis()
 
-    # 调整子图参数，为底部图例留出更多空间
-    plt.subplots_adjust(bottom=0.15)
+    # 调整子图参数，为顶部图例留出更多空间
+    plt.subplots_adjust(top=0.9)
 
-    # 调整布局 - 使用更紧凑的布局
+    # 设置背景色为更柔和的颜色
+    ax.set_facecolor('#F8F9FA')  # 非常浅的灰色背景
+
+    # 调整布局
     plt.tight_layout()
 
     # 显示图表
     st.pyplot(fig)
+    
+    # 添加下载柱状图功能
+    st.subheader("💾 下载图表")
+
+    # 创建两列布局放置下载按钮
+    col1, col2 = st.columns(2)
+
+    with col1:
+        # 将图表保存为PNG格式并提供下载
+        from io import BytesIO
+        buffer_png = BytesIO()
+        fig.savefig(buffer_png, format="png", dpi=300, bbox_inches="tight")
+        buffer_png.seek(0)
+    
+        st.download_button(
+            label="📥 下载PNG格式图表",
+            data=buffer_png,
+            file_name=f"z_score_chart_{method}.png",
+            mime="image/png",
+            help="下载高分辨率PNG格式的Z值分布图"
+        )
+
+    with col2:
+        # 将图表保存为PDF格式并提供下载
+        buffer_pdf = BytesIO()
+        fig.savefig(buffer_pdf, format="pdf", bbox_inches="tight")
+        buffer_pdf.seek(0)
+    
+        st.download_button(
+            label="📥 下载PDF格式图表",
+            data=buffer_pdf,
+            file_name=f"z_score_chart_{method}.pdf",
+            mime="application/pdf",
+            help="下载PDF格式的Z值分布图，适合打印和报告"
+        )
+
+    # 添加提示信息
+    st.info("💡 提示：PNG格式适合在演示文稿和网页中使用，PDF格式适合打印和学术报告。")
     
     # 导出功能
     st.subheader("💾 导出结果")
