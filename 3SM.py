@@ -455,43 +455,51 @@ def q_hampel_robust_algorithm(data):
         'weights': weights if 'weights' in locals() else np.ones_like(data)
     }
 
-# 执行分析
-if data is not None and len(data) > 0:
-    st.markdown("---")
-    st.subheader(f"📈 {method}分析结果")
+# 执行分析 - 修改数据检查逻辑
+if data is not None:
+    # 更健壮的数据检查
+    try:
+        data_array = np.array(data)
+        valid_data = len(data_array) > 0 and np.issubdtype(data_array.dtype, np.number)
+    except:
+        valid_data = False
     
-    with st.spinner(f"正在执行{method}分析..."):
-        if method == "迭代稳健统计法":
-            results = iterative_robust_algorithm(data, max_iterations=max_iter, k=k_value)
-        elif method == "四分位稳健统计法":
-            results = quartile_robust_algorithm(data)
-        else:  # Q/Hampel法
-            results = q_hampel_robust_algorithm(data)
-    
-    # 创建两列布局
-    col1, col2 = st.columns(2)
-    
-    with col1:
-        st.metric("稳健平均值", f"{results['robust_mean']:.6f}")
-        st.metric("稳健标准差", f"{results['robust_std']:.6f}")
+    if valid_data:
+        st.markdown("---")
+        st.subheader(f"📈 {method}分析结果")
         
-    with col2:
-        if 'iterations' in results:
-            st.metric("迭代次数", results['iterations'])
-        st.metric("离群值数量", len(results['outliers']))
+        with st.spinner(f"正在执行{method}分析..."):
+            if method == "迭代稳健统计法":
+                results = iterative_robust_algorithm(data, max_iterations=max_iter, k=k_value)
+            elif method == "四分位稳健统计法":
+                results = quartile_robust_algorithm(data)
+            else:  # Q/Hampel法
+                results = q_hampel_robust_algorithm(data)
+        
+        # 创建两列布局
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            st.metric("稳健平均值", f"{results['robust_mean']:.6f}")
+            st.metric("稳健标准差", f"{results['robust_std']:.6f}")
+            
+        with col2:
+            if 'iterations' in results:
+                st.metric("迭代次数", results['iterations'])
+            st.metric("离群值数量", len(results['outliers']))
+        
+        # ... 其余的分析结果显示代码保持不变 ...
+        
+    else:
+        st.error("❌ 数据无效或为空，请检查输入的数据格式")
+else:
+    st.info("👆 请先输入或上传数据以开始分析")
     
-    # 方法特定结果显示
-    if method == "四分位稳健统计法":
-        st.info("📊 **四分位统计量:**")
-        col3, col4, col5, col6 = st.columns(4)
-        with col3:
-            st.metric("下四分位数(Q1)", f"{results['q1']:.6f}")
-        with col4:
-            st.metric("上四分位数(Q3)", f"{results['q3']:.6f}")
-        with col5:
-            st.metric("四分位距(IQR)", f"{results['iqr']:.6f}")
-        with col6:
-            st.metric("标准化四分位距(NIQR)", f"{results['niqr']:.6f}")
+# 调试信息（临时添加）
+st.write("数据类型:", type(data))
+if data is not None:
+    st.write("数据长度:", len(data))
+    st.write("数据内容:", data)    
     
     # 详细结果
     st.subheader("📋 详细结果")
@@ -542,11 +550,11 @@ if data is not None and len(data) > 0:
 
     df_clean['Category'] = df_clean.apply(classify_data, axis=1)
 
-    # 按照Z值从大到小排序，但保留原始索引
+    # 按照Z值从大到小排序
     df_sorted = df_clean.sort_values('Z_Score', ascending=False)
 
-    # 创建Z值柱状图
-    fig, ax = plt.subplots(figsize=(14, 10))
+    # 创建Z值柱状图 - 增加图形高度，特别是顶部边距
+    fig, ax = plt.subplots(figsize=(14, 12))
 
     # 设置类别对应的颜色
     color_map = {
@@ -578,11 +586,11 @@ if data is not None and len(data) > 0:
     # 设置图形属性
     ax.set_xlabel('Z-Score', fontsize=14, fontweight='bold')
     ax.set_ylabel('Original Data ID', fontsize=14, fontweight='bold')
-    ax.set_title('Z-Score Distribution (Sorted)', fontsize=16, fontweight='bold')
+    ax.set_title('Z-Score Distribution (Sorted)', fontsize=16, fontweight='bold', pad=20)
 
     # 设置Y轴刻度 - 使用原始数据编号作为标签
     ax.set_yticks(y_positions)
-    ax.set_yticklabels([f"{idx}" for idx in df_sorted.index])
+    ax.set_yticklabels([f"Data {idx}" for idx in df_sorted.index])
 
     # 添加零线参考线
     ax.axvline(x=0, color='black', linestyle='-', alpha=0.5, linewidth=1)
@@ -596,19 +604,23 @@ if data is not None and len(data) > 0:
     # 添加网格
     ax.grid(axis='x', alpha=0.3, linestyle='--')
 
-    # 添加图例 - 使用颜色映射创建图例
+    # 添加图例 - 使用颜色映射创建图例，放在图表底部
     from matplotlib.patches import Patch
     legend_elements = [
         Patch(facecolor=color_map['Satisfactory'], label='Satisfactory (|Z| ≤ 2)'),
         Patch(facecolor=color_map['Questionable'], label='Questionable (2 < |Z| ≤ 3)'),
         Patch(facecolor=color_map['Unsatisfactory'], label='Unsatisfactory (|Z| > 3)')
     ]
-    ax.legend(handles=legend_elements, title='Category', title_fontsize=12, fontsize=11, loc='upper right')
+    ax.legend(handles=legend_elements, title='Category', title_fontsize=12, fontsize=11, 
+              loc='upper center', bbox_to_anchor=(0.5, -0.1), ncol=3)
 
     # 反转Y轴，使最大的Z值在顶部
     ax.invert_yaxis()
 
-    # 调整布局
+    # 调整子图参数，为底部图例留出更多空间
+    plt.subplots_adjust(bottom=0.15)
+
+    # 调整布局 - 使用更紧凑的布局
     plt.tight_layout()
 
     # 显示图表
