@@ -53,22 +53,84 @@ data = None
 
 if input_method == "手动输入":
     st.subheader("📝 手动输入数据")
-    data_input = st.text_area("请输入数据（每行一个数值或用逗号分隔）:", 
-                             "54.4, 54.6, 54.2, 54.3, 53.9, 54.4, 54.3, 54.6, 54.5, 54.3, 54.5, 54.1, 54.2, 54.3, 54.8, 54.8, 54.8, 54.3, 54.4, 54.3, 54.3, 54.7, 54.4, 54.5, 54.4, 55.0, 55.0, 55.1, 54.1, 54.8, 54.5, 55.5, 55.6, 55.0, 54.3, 55.3, 54.3, 54.4, 54.3, 54.4, 54.5, 55.9, 53.2, 54.6")
     
-    if st.button("分析数据"):
-        try:
-            # 解析输入数据
-            if "\n" in data_input:
-                data_list = [float(x.strip()) for x in data_input.split("\n") if x.strip()]
-            else:
-                data_list = [float(x.strip()) for x in data_input.split(",") if x.strip()]
-            
-            data = np.array(data_list)
-            st.success(f"成功解析 {len(data)} 个数据点")
-            
-        except ValueError as e:
-            st.error("数据格式错误！请确保输入的是数字")
+    # 使用session_state来存储输入数据和历史记录
+    if 'manual_data' not in st.session_state:
+        st.session_state.manual_data = "54.4, 54.6, 54.2, 54.3, 53.9, 54.4, 54.3, 54.6, 54.5, 54.3, 54.5, 54.1, 54.2, 54.3, 54.8, 54.8, 54.8, 54.3, 54.4, 54.3, 54.3, 54.7, 54.4, 54.5, 54.4, 55.0, 55.0, 55.1, 54.1, 54.8, 54.5, 55.5, 55.6, 55.0, 54.3, 55.3, 54.3, 54.4, 54.3, 54.4, 54.5, 55.9, 53.2, 54.6"
+    
+    if 'data_history' not in st.session_state:
+        st.session_state.data_history = [st.session_state.manual_data]
+    
+    # 创建三列布局，将按钮放在右侧
+    col1, col2, col3 = st.columns([3, 1, 1])
+    
+    with col1:
+        data_input = st.text_area(
+            "请输入数据（每行一个数值或用逗号分隔）:", 
+            value=st.session_state.manual_data,
+            height=150,
+            key="manual_input"
+        )
+    
+    with col2:
+        st.write("")  # 垂直间距
+        st.write("")  # 垂直间距
+        # 撤销按钮 - 只有当有历史记录时才启用
+        undo_disabled = len(st.session_state.data_history) <= 1
+        if st.button("↶ 撤销", 
+                    use_container_width=True, 
+                    disabled=undo_disabled,
+                    help="恢复到上一次的数据状态"):
+            if len(st.session_state.data_history) > 1:
+                # 移除当前状态
+                st.session_state.data_history.pop()
+                # 恢复到上一个状态
+                st.session_state.manual_data = st.session_state.data_history[-1]
+                st.rerun()
+    
+    with col3:
+        st.write("")  # 垂直间距
+        st.write("")  # 垂直间距
+        if st.button("🗑️ 清除", 
+                    use_container_width=True, 
+                    type="secondary",
+                    help="清空所有数据"):
+            # 保存当前状态到历史记录
+            st.session_state.data_history.append(st.session_state.manual_data)
+            st.session_state.manual_data = ""
+            st.rerun()
+    
+    # 更新session_state中的数据
+    if data_input != st.session_state.manual_data:
+        # 如果数据有变化，保存到历史记录
+        st.session_state.data_history.append(st.session_state.manual_data)
+        # 限制历史记录长度，避免内存问题
+        if len(st.session_state.data_history) > 10:
+            st.session_state.data_history = st.session_state.data_history[-10:]
+        st.session_state.manual_data = data_input
+    
+    # 创建两列布局，将分析按钮放在右侧
+    col4, col5 = st.columns([3, 1])
+    
+    with col5:
+        st.write("")  # 垂直间距
+        if st.button("分析数据", use_container_width=True, type="primary"):
+            try:
+                # 解析输入数据
+                if "\n" in data_input:
+                    data_list = [float(x.strip()) for x in data_input.split("\n") if x.strip()]
+                else:
+                    data_list = [float(x.strip()) for x in data_input.split(",") if x.strip()]
+                
+                data = np.array(data_list)
+                st.success(f"成功解析 {len(data)} 个数据点")
+                
+            except ValueError as e:
+                st.error("数据格式错误！请确保输入的是数字")
+    
+    # 显示历史记录信息（可选）
+    if len(st.session_state.data_history) > 1:
+        st.caption(f"可撤销步骤: {len(st.session_state.data_history)-1}")
 
 elif input_method == "文件上传":
     st.subheader("📁 上传数据文件")
@@ -624,21 +686,7 @@ st.markdown("""
 st.markdown("---")
 st.subheader("💬 用户反馈")
 
-# 创建反馈按钮
-if st.button("📧 联系技术支持"):
-    st.info("""
-    **技术支持**
-    
-    如果您在使用过程中遇到任何问题或有改进建议，请您邮件联系：
-    
-    📩 **ypan1104@163.com**
-    
-    **联系人**：印博士
-    
-    我们会在收到邮件后尽快回复您，感谢您的支持！
-    """)
-
-# 或者使用扩展器形式
+# 使用扩展器形式
 with st.expander("💬 有问题或建议？点击这里联系我们", expanded=False):
     st.markdown("""
     **技术支持与反馈**
@@ -651,14 +699,9 @@ with st.expander("💬 有问题或建议？点击这里联系我们", expanded=
     
     请通过以下方式联系我们：
     
-    📧 **邮箱**: ypan1104@163.com
+    📩 **ypan1104@163.com**
     
-    **👤 联系人**: 印博士
-    
-    我们承诺：
-    - 24小时内回复您的邮件
-    - 认真考虑每一条建议
-    - 持续改进应用体验
-    
+    **联系人**：印博士
+       
     感谢您帮助我们变得更好！
     """)
