@@ -392,14 +392,14 @@ if data is not None and len(data) > 0:
         st.metric("不满意 (|Z| > 3)", f"{unsatisfactory} 个")
     
     # 可视化 - 使用新的Z值柱状图
-    st.subheader("📊 数据可视化")
-    
-    # 创建数据框用于可视化
+    st.subheader("📊 Data Visualization")
+
+   # 创建数据框用于可视化
     df_clean = pd.DataFrame({
         'Original_Data': data,
-        'Z_Score': results['Z_scores']
-    })
-    
+        'Z_Score': results['Z_scores']  # 确保列名一致
+})
+
     # 根据Z值进行分类
     def classify_data(row):
         if abs(row['Z_Score']) <= 2:
@@ -408,9 +408,9 @@ if data is not None and len(data) > 0:
             return 'Questionable'
         else:
             return 'Unsatisfactory'
-    
+
     df_clean['Category'] = df_clean.apply(classify_data, axis=1)
-    
+
     # 确保列名正确，然后按照Z值从大到小排序
     # 首先检查列名是否存在
     if 'Z_Score' in df_clean.columns:
@@ -424,58 +424,57 @@ if data is not None and len(data) > 0:
             df_sorted = df_clean.sort_values(numeric_cols[0], ascending=False)
         else:
             df_sorted = df_clean
-    
+
     # 创建Z值柱状图
     fig, ax = plt.subplots(figsize=(14, 10))
-    
+
     # 设置类别对应的颜色
     color_map = {
-        'Satisfactory': '#2E8B57',    # 满意
-        'Questionable': '#FFA500',    # 可疑
-        'Unsatisfactory': '#DC143C'   # 不满意
-
+        'Satisfactory': '#2E8B57',    # 绿色
+        'Questionable': '#FFA500',    # 橙色
+        'Unsatisfactory': '#DC143C'    # 红色
     }
-    
+
     # 为每个类别创建柱状图
     for category, color in color_map.items():
-        category_data = df_clean[df_clean['Category'] == category]
+        category_data = df_sorted[df_sorted['Category'] == category]
         if not category_data.empty:
-            # 使用原始数据编号作为Y轴标签
+        # 使用排序后的索引作为Y轴标签
             bars = ax.barh([str(idx) for idx in category_data.index], 
-                          category_data['Z_Score'], 
-                          color=color, alpha=0.7, label=category, height=0.8)
-            
-            # 在柱状图上标注Z值
+                      category_data['Z_Score'], 
+                      color=color, alpha=0.7, label=category, height=0.8)
+        
+        # 在柱状图上标注Z值
             for bar, z_value in zip(bars, category_data['Z_Score']):
                 plt.text(bar.get_width() + 0.05 * (1 if bar.get_width() >= 0 else -1), 
-                        bar.get_y() + bar.get_height()/2, 
-                        f'{z_value:.2f}', 
-                        ha='left' if bar.get_width() >= 0 else 'right', 
-                        va='center', fontsize=9, fontweight='bold')
-    
+                    bar.get_y() + bar.get_height()/2, 
+                    f'{z_value:.2f}', 
+                    ha='left' if bar.get_width() >= 0 else 'right', 
+                    va='center', fontsize=9, fontweight='bold')
+
     # 设置图形属性
     ax.set_xlabel('Z-Score', fontsize=14, fontweight='bold')
-    ax.set_ylabel('Data ID', fontsize=14, fontweight='bold')
-    ax.set_title('Z-Score Distribution', fontsize=16, fontweight='bold')
-    
+    ax.set_ylabel('Data ID (Sorted by Z-Score)', fontsize=14, fontweight='bold')
+    ax.set_title(f'{method} - Z-Score Distribution (Sorted)', fontsize=16, fontweight='bold')
+
     # 添加零线参考线
     ax.axvline(x=0, color='black', linestyle='-', alpha=0.5, linewidth=1)
-    
+
     # 添加阈值线
     ax.axvline(x=-2, color='gray', linestyle='--', alpha=0.7, linewidth=0.8)
     ax.axvline(x=2, color='gray', linestyle='--', alpha=0.7, linewidth=0.8)
     ax.axvline(x=-3, color='red', linestyle='--', alpha=0.7, linewidth=0.8)
     ax.axvline(x=3, color='red', linestyle='--', alpha=0.7, linewidth=0.8)
-    
+
     # 添加网格
     ax.grid(axis='x', alpha=0.3, linestyle='--')
-    
+
     # 添加图例
     ax.legend(title='Category', title_fontsize=12, fontsize=11, loc='upper right')
-    
+
     # 调整布局
     plt.tight_layout()
-    
+
     # 显示图表
     st.pyplot(fig)
     
