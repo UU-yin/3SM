@@ -83,53 +83,52 @@ if input_method == "手动输入":
     # 创建三列布局，按照您要求的顺序排列按钮
     col1, col2, col3 = st.columns([2, 1, 1])
     
+    # 替代方案：使用回调函数
+    def clear_data():
+        st.session_state.data_history.append(st.session_state.manual_data)
+        st.session_state.manual_data = ""
+        st.session_state.data_loaded = False
+    
+    def undo_data():
+        if len(st.session_state.data_history) > 1:
+            st.session_state.data_history.pop()
+            st.session_state.manual_data = st.session_state.data_history[-1]
+            st.session_state.data_loaded = False
+    
+    def analyze_data():
+        try:
+            if "\n" in st.session_state.manual_data:
+                data_list = [float(x.strip()) for x in st.session_state.manual_data.split("\n") if x.strip()]
+            else:
+                data_list = [float(x.strip()) for x in st.session_state.manual_data.split(",") if x.strip()]
+            
+            data = np.array(data_list)
+            st.session_state.data_loaded = True
+            st.success(f"成功解析 {len(data)} 个数据点")
+        except ValueError as e:
+            st.error("数据格式错误！请确保输入的是数字")
+    
+    # 在按钮中使用on_click参数
     with col1:
-        # 分析数据按钮（左一）
-        if st.button("分析数据", 
-                    use_container_width=True, 
-                    type="primary"):
-            try:
-                # 解析输入数据
-                if "\n" in data_input:
-                    data_list = [float(x.strip()) for x in data_input.split("\n") if x.strip()]
-                else:
-                    data_list = [float(x.strip()) for x in data_input.split(",") if x.strip()]
-                
-                data = np.array(data_list)
-                st.session_state.data_loaded = True
-                st.success(f"成功解析 {len(data)} 个数据点")
-                
-            except ValueError as e:
-                st.error("数据格式错误！请确保输入的是数字")
+        st.button("分析数据", 
+                  use_container_width=True, 
+                  type="primary",
+                  on_click=analyze_data)
     
     with col2:
-        # 清除按钮（左二）
-        if st.button("一键清除", 
-                    use_container_width=True, 
-                    type="secondary",
-                    help="清空所有数据"):
-            # 保存当前状态到历史记录
-            st.session_state.data_history.append(st.session_state.manual_data)
-            st.session_state.manual_data = ""
-            st.session_state.data_loaded = False
-            # 使用rerun刷新页面
-            st.rerun()
+        st.button("一键清除", 
+                  use_container_width=True, 
+                  type="secondary",
+                  help="清空所有数据",
+                  on_click=clear_data)
     
     with col3:
-        # 撤销按钮（左三）- 只有当有历史记录时才启用
         undo_disabled = len(st.session_state.data_history) <= 1
-        if st.button("↶ 撤销", 
-                    use_container_width=True, 
-                    disabled=undo_disabled,
-                    help="恢复到上一次的数据状态"):
-            if len(st.session_state.data_history) > 1:
-                # 移除当前状态
-                st.session_state.data_history.pop()
-                # 恢复到上一个状态
-                st.session_state.manual_data = st.session_state.data_history[-1]
-                st.session_state.data_loaded = False
-                # 使用rerun刷新页面
-                st.rerun()
+        st.button("↶ 撤销", 
+                  use_container_width=True, 
+                  disabled=undo_disabled,
+                  help="恢复到上一次的数据状态",
+                  on_click=undo_data)
     
     # 如果数据已加载，设置data变量
     if st.session_state.data_loaded:
