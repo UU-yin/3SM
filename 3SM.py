@@ -2,7 +2,7 @@
 """
 Created on Tue Oct 21 13:50:53 2025
 
-@author: ypan1
+@author: ypan
 """
 
 import streamlit as st
@@ -49,8 +49,6 @@ elif method == "Q/Hampel法":
 input_method = st.radio("数据输入方式:", 
                        ["手动输入", "文件上传", "示例数据"])
 
-data = None
-
 if input_method == "手动输入":
     st.subheader("📝 手动输入数据")
     
@@ -61,21 +59,57 @@ if input_method == "手动输入":
     if 'data_history' not in st.session_state:
         st.session_state.data_history = [st.session_state.manual_data]
     
-    # 创建两列布局，数据输入框在左侧，按钮在右侧上下排列
-    col1, col2 = st.columns([4, 1])
+    # 数据输入框
+    data_input = st.text_area(
+        "请输入数据（每行一个数值或用逗号分隔）:", 
+        value=st.session_state.manual_data,
+        height=150,
+        key="manual_input"
+    )
+    
+    # 更新session_state中的数据
+    if data_input != st.session_state.manual_data:
+        # 如果数据有变化，保存到历史记录
+        st.session_state.data_history.append(st.session_state.manual_data)
+        # 限制历史记录长度，避免内存问题
+        if len(st.session_state.data_history) > 10:
+            st.session_state.data_history = st.session_state.data_history[-10:]
+        st.session_state.manual_data = data_input
+    
+    # 创建三列布局，按照您要求的顺序排列按钮
+    col1, col2, col3 = st.columns([2, 1, 1])
     
     with col1:
-        data_input = st.text_area(
-            "请输入数据（每行一个数值或用逗号分隔）:", 
-            value=st.session_state.manual_data,
-            height=150,
-            key="manual_input"
-        )
+        # 分析数据按钮（左一）
+        if st.button("分析数据", 
+                    use_container_width=True, 
+                    type="primary"):
+            try:
+                # 解析输入数据
+                if "\n" in data_input:
+                    data_list = [float(x.strip()) for x in data_input.split("\n") if x.strip()]
+                else:
+                    data_list = [float(x.strip()) for x in data_input.split(",") if x.strip()]
+                
+                data = np.array(data_list)
+                st.success(f"成功解析 {len(data)} 个数据点")
+                
+            except ValueError as e:
+                st.error("数据格式错误！请确保输入的是数字")
     
     with col2:
-        st.write("")  # 垂直间距
-        
-        # 撤销按钮 - 只有当有历史记录时才启用
+        # 清除按钮（左二）
+        if st.button("一键清除", 
+                    use_container_width=True, 
+                    type="secondary",
+                    help="清空所有数据"):
+            # 保存当前状态到历史记录
+            st.session_state.data_history.append(st.session_state.manual_data)
+            st.session_state.manual_data = ""
+            st.rerun()
+    
+    with col3:
+        # 撤销按钮（左三）- 只有当有历史记录时才启用
         undo_disabled = len(st.session_state.data_history) <= 1
         if st.button("↶ 撤销", 
                     use_container_width=True, 
@@ -87,40 +121,6 @@ if input_method == "手动输入":
                 # 恢复到上一个状态
                 st.session_state.manual_data = st.session_state.data_history[-1]
                 st.rerun()
-        
-        # 清除按钮
-        if st.button("一键清除", 
-                    use_container_width=True, 
-                    type="secondary",
-                    help="清空所有数据"):
-            # 保存当前状态到历史记录
-            st.session_state.data_history.append(st.session_state.manual_data)
-            st.session_state.manual_data = ""
-            st.rerun()
-    
-    # 更新session_state中的数据
-    if data_input != st.session_state.manual_data:
-        # 如果数据有变化，保存到历史记录
-        st.session_state.data_history.append(st.session_state.manual_data)
-        # 限制历史记录长度，避免内存问题
-        if len(st.session_state.data_history) > 10:
-            st.session_state.data_history = st.session_state.data_history[-10:]
-        st.session_state.manual_data = data_input
-    
-    # 在数据输入框下方放置分析按钮（左侧）
-    if st.button("分析数据", type="primary"):
-        try:
-            # 解析输入数据
-            if "\n" in data_input:
-                data_list = [float(x.strip()) for x in data_input.split("\n") if x.strip()]
-            else:
-                data_list = [float(x.strip()) for x in data_input.split(",") if x.strip()]
-            
-            data = np.array(data_list)
-            st.success(f"成功解析 {len(data)} 个数据点")
-            
-        except ValueError as e:
-            st.error("数据格式错误！请确保输入的是数字")
 
 elif input_method == "文件上传":
     st.subheader("📁 上传数据文件")
@@ -207,8 +207,33 @@ else:  # 示例数据
         54.5, 55.5, 55.6, 55.0, 54.3, 55.3, 54.3, 54.4, 54.3, 54.4, 
         54.5, 55.9, 53.2, 54.6
     ])
+    
+    # 显示示例数据信息
+    st.write(f"示例数据已加载，包含 {len(example_data)} 个测量值")
+    
+    # 添加一个可展开的区域显示所有原始数据值
+    with st.expander("📋 查看所有示例数据值", expanded=False):
+        # 创建数据框显示所有数据
+        df_example = pd.DataFrame({
+            '数据编号': range(1, len(example_data) + 1),
+            '数值': example_data
+        })
+        st.dataframe(df_example, use_container_width=True)
+        
+        # 同时显示基本统计信息
+        st.write("**基本统计信息:**")
+        col1, col2, col3, col4 = st.columns(4)
+        with col1:
+            st.metric("平均值", f"{np.mean(example_data):.4f}")
+        with col2:
+            st.metric("标准差", f"{np.std(example_data, ddof=1):.4f}")
+        with col3:
+            st.metric("最小值", f"{np.min(example_data):.4f}")
+        with col4:
+            st.metric("最大值", f"{np.max(example_data):.4f}")
+    
+    # 设置数据变量，以便后续分析
     data = example_data
-    st.write("示例数据已加载，包含44个测量值")
 
 # 方法描述
 st.sidebar.header("📚 方法说明")
