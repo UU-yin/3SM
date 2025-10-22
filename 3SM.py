@@ -72,7 +72,63 @@ if input_method == "手动输入":
 
 elif input_method == "文件上传":
     st.subheader("📁 上传数据文件")
+    
+    # 显示TXT文件格式示例和下载提示
+    st.info("📝 **TXT文件格式说明**")
+    st.markdown("""
+    **TXT文件格式要求：**
+    - 每行一个数值
+    - 支持整数和小数
+    - 空行会自动忽略
+    
+    **示例文件内容：**
+    ```
+    54.4
+    54.6
+    54.2
+    54.3
+    53.9
+    54.4
+    54.3
+    54.6
+    54.5
+    54.3
+    ```
+    """)
+    
+    # 提供示例文件下载 - 放在更显眼的位置
+    example_content = "54.4\n54.6\n54.2\n54.3\n53.9\n54.4\n54.3\n54.6\n54.5\n54.3"
+    st.download_button(
+        label="📥 下载示例TXT文件",
+        data=example_content,
+        file_name="example_data.txt",
+        mime="text/plain",
+        help="点击下载示例TXT文件，了解正确的数据格式"
+    )
+    
+    st.markdown("---")  # 添加分隔线
+    
     uploaded_file = st.file_uploader("选择CSV或TXT文件", type=['csv', 'txt'])
+    
+    if uploaded_file is not None:
+        try:
+            if uploaded_file.name.endswith('.csv'):
+                df = pd.read_csv(uploaded_file)
+                # 假设第一列是数据
+                data = df.iloc[:, 0].values
+                st.success(f"成功加载 {len(data)} 个数据点")
+                st.write("前10个数据:", data[:10])
+            else:
+                # 文本文件，每行一个数字
+                content = uploaded_file.read().decode()
+                data_list = [float(x.strip()) for x in content.split() if x.strip()]
+                data = np.array(data_list)
+                st.success(f"成功加载 {len(data)} 个数据点")
+                st.write("前10个数据:", data[:10])
+            
+        except Exception as e:
+            st.error(f"文件读取错误: {e}")
+            st.info("请确保文件格式正确：每行一个数值，且均为有效数字")           
     
     if uploaded_file is not None:
         try:
