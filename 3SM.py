@@ -52,103 +52,97 @@ data = None
 
 import streamlit as st
 
-# 初始化会话状态
-if 'manual_data' not in st.session_state:
-    st.session_state.manual_data = "54.4, 54.6, 54.2, 54.3, 53.9, 54.4, 54.3, 54.6, 54.5, 54.3, 54.5, 54.1, 54.2, 54.3, 54.8, 54.8, 54.8, 54.3, 54.4, 54.3, 54.3, 54.7, 54.4, 54.5, 54.4, 55.0, 55.0, 55.1, 54.1, 54.8, 54.5, 55.5, 55.6, 55.0, 54.3, 55.3, 54.3, 54.4, 54.3, 54.4, 54.5, 55.9, 53.2, 54.6"
-
-if 'data_history' not in st.session_state:
-    st.session_state.data_history = [st.session_state.manual_data]
-
-if 'data_loaded' not in st.session_state:
-    st.session_state.data_loaded = False
-
-# 数据输入框
-data_input = st.text_area(
-    "请输入数据（每行一个数值或用逗号分隔）:",
-    value=st.session_state.manual_data,
-    height=150,
-    key="manual_input"
-)
-
-# 更新session_state中的数据
-if data_input != st.session_state.manual_data:
-    st.session_state.data_history.append(st.session_state.manual_data)
-    # 限制历史记录长度，避免内存问题
-    if len(st.session_state.data_history) > 10:
-        st.session_state.data_history = st.session_state.data_history[-10:]
-    st.session_state.manual_data = data_input
-
-# 创建三列布局，按照您要求的顺序排列按钮
-col1, col2, col3 = st.columns([2, 1, 1])
-
-# 回调函数定义
-def clear_data():
-    """一键清除数据的回调函数"""
-    st.session_state.data_history.append(st.session_state.manual_data)
-    st.session_state.manual_data = ""
-    st.session_state.data_loaded = False
-
-def undo_data():
-    """撤销操作的回调函数"""
-    if len(st.session_state.data_history) > 1:
-        st.session_state.data_history.pop()
-        st.session_state.manual_data = st.session_state.data_history[-1]
+if input_method == "手动输入":
+    st.subheader("📝 手动输入数据")
+    
+    # 初始化会话状态
+    if 'manual_data' not in st.session_state:
+        st.session_state.manual_data = "54.4, 54.6, 54.2, 54.3, 53.9, 54.4, 54.3, 54.6, 54.5, 54.3, 54.5, 54.1, 54.2, 54.3, 54.8, 54.8, 54.8, 54.3, 54.4, 54.3, 54.3, 54.7, 54.4, 54.5, 54.4, 55.0, 55.0, 55.1, 54.1, 54.8, 54.5, 55.5, 55.6, 55.0, 54.3, 55.3, 54.3, 54.4, 54.3, 54.4, 54.5, 55.9, 53.2, 54.6"
+    
+    if 'data_history' not in st.session_state:
+        st.session_state.data_history = [st.session_state.manual_data]
+    
+    if 'data_loaded' not in st.session_state:
         st.session_state.data_loaded = False
-
-def analyze_data():
-    """分析数据的回调函数"""
-    try:
-        if "\n" in st.session_state.manual_data:
-            data_list = [float(x.strip()) for x in st.session_state.manual_data.split("\n") if x.strip()]
-        else:
-            data_list = [float(x.strip()) for x in st.session_state.manual_data.split(",") if x.strip()]
-        # 这里设置一个标记，表示数据已加载并解析成功
-        # 实际的数据处理逻辑，您可能需要调整以适应您现有的分析流程
-        st.session_state.data_loaded = True
-        st.success(f"成功解析 {len(data_list)} 个数据点")
-    except ValueError as e:
-        st.error("数据格式错误！请确保输入的是数字")
-
-# 在按钮中使用on_click参数关联回调函数:cite[7]
-with col1:
-    st.button("分析数据", 
-              use_container_width=True, 
-              type="primary",
-              on_click=analyze_data)  # 关联分析回调函数
-
-with col2:
-    st.button("一键清除", 
-              use_container_width=True, 
-              type="secondary",
-              help="清空所有数据",
-              on_click=clear_data)  # 关联清除回调函数
-
-with col3:
-    undo_disabled = len(st.session_state.data_history) <= 1
-    st.button("↶ 撤销", 
-              use_container_width=True, 
-              disabled=undo_disabled,
-              help="恢复到上一次的数据状态",
-              on_click=undo_data)  # 关联撤销回调函数
-
-# 如果数据已加载，设置data变量以便后续分析
-if st.session_state.data_loaded:
-    try:
-        # 这里可以放置您原有的数据解析和分析结果展示逻辑
-        # 例如：将解析后的数据赋值给一个全局的 `data` 变量
-        if "\n" in st.session_state.manual_data:
-            data_list = [float(x.strip()) for x in st.session_state.manual_data.split("\n") if x.strip()]
-        else:
-            data_list = [float(x.strip()) for x in st.session_state.manual_data.split(",") if x.strip()]
-        # 假设您后续的分析流程需要一个名为 `data` 的变量
-        # 请注意：在复杂的Streamlit应用中，全局变量可能不是最佳选择，您可能需要调整数据传递方式
-        data = np.array(data_list)
-        # 在这里，您可能需要触发您原有的分析函数并显示结果
-        # 例如：results = your_analysis_function(data)
-        # 然后展示 results
-    except Exception as e:
+    
+    # 数据输入框
+    data_input = st.text_area(
+        "请输入数据（每行一个数值或用逗号分隔）:", 
+        value=st.session_state.manual_data,
+        height=150,
+        key="manual_input"
+    )
+    
+    # 更新session_state中的数据
+    if data_input != st.session_state.manual_data:
+        # 如果数据有变化，保存到历史记录
+        st.session_state.data_history.append(st.session_state.manual_data)
+        # 限制历史记录长度，避免内存问题
+        if len(st.session_state.data_history) > 10:
+            st.session_state.data_history = st.session_state.data_history[-10:]
+        st.session_state.manual_data = data_input
+    
+    # 创建三列布局，按照您要求的顺序排列按钮
+    col1, col2, col3 = st.columns([2, 1, 1])
+    
+    # 替代方案：使用回调函数
+    def clear_data():
+        st.session_state.data_history.append(st.session_state.manual_data)
+        st.session_state.manual_data = ""
         st.session_state.data_loaded = False
-        st.error(f"数据处理出错: {e}")
+    
+    def undo_data():
+        if len(st.session_state.data_history) > 1:
+            st.session_state.data_history.pop()
+            st.session_state.manual_data = st.session_state.data_history[-1]
+            st.session_state.data_loaded = False
+    
+    def analyze_data():
+        try:
+            if "\n" in st.session_state.manual_data:
+                data_list = [float(x.strip()) for x in st.session_state.manual_data.split("\n") if x.strip()]
+            else:
+                data_list = [float(x.strip()) for x in st.session_state.manual_data.split(",") if x.strip()]
+            
+            data = np.array(data_list)
+            st.session_state.data_loaded = True
+            st.success(f"成功解析 {len(data)} 个数据点")
+        except ValueError as e:
+            st.error("数据格式错误！请确保输入的是数字")
+    
+    # 在按钮中使用on_click参数
+    with col1:
+        st.button("分析数据", 
+                  use_container_width=True, 
+                  type="primary",
+                  on_click=analyze_data)
+    
+    with col2:
+        st.button("一键清除", 
+                  use_container_width=True, 
+                  type="secondary",
+                  help="清空所有数据",
+                  on_click=clear_data)
+    
+    with col3:
+        undo_disabled = len(st.session_state.data_history) <= 1
+        st.button("↶ 撤销", 
+                  use_container_width=True, 
+                  disabled=undo_disabled,
+                  help="恢复到上一次的数据状态",
+                  on_click=undo_data)
+    
+    # 如果数据已加载，设置data变量
+    if st.session_state.data_loaded:
+        try:
+            if "\n" in st.session_state.manual_data:
+                data_list = [float(x.strip()) for x in st.session_state.manual_data.split("\n") if x.strip()]
+            else:
+                data_list = [float(x.strip()) for x in st.session_state.manual_data.split(",") if x.strip()]
+            
+            data = np.array(data_list)
+        except:
+            st.session_state.data_loaded = False
 
 elif input_method == "文件上传":
     st.subheader("📁 上传数据文件")
