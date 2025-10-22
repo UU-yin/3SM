@@ -527,8 +527,8 @@ if data is not None and len(data) > 0:
     # 按照Z值从大到小排序
     df_sorted = df_clean.sort_values('Z_Score', ascending=False)
     
-    # 创建Z值柱状图 - 增加高度为图例留出空间
-    fig, ax = plt.subplots(figsize=(14, 14))  # 增加高度
+    # 创建Z值柱状图
+    fig, ax = plt.subplots(figsize=(14, 16))
     
     # 设置类别对应的高饱和度颜色
     color_map = {
@@ -545,15 +545,15 @@ if data is not None and len(data) > 0:
     bars = ax.barh(y_positions, 
                    df_sorted['Z_Score'], 
                    color=colors, 
-                   alpha=0.9,  # 提高透明度使颜色更鲜艳
+                   alpha=0.6,  # 降低透明度使颜色更柔和
                    height=0.8,
-                   edgecolor='black',  # 添加黑色边框使柱状图更清晰
-                   linewidth=0.3)
+                   edgecolor='white',  # 使用白色边框使柱状图更清晰
+                   linewidth=0.5)
     
     # 在柱状图上标注Z值
     for i, (bar, z_value) in enumerate(zip(bars, df_sorted['Z_Score'])):
-        # 使用白色文字确保在高饱和度背景上可读
-        text_color = 'white'
+        # 使用黑色文字确保在较淡的背景上可读
+        text_color = 'black'
         ax.text(bar.get_width() + 0.05 * (1 if bar.get_width() >= 0 else -1), 
                 bar.get_y() + bar.get_height()/2, 
                 f'{z_value:.2f}', 
@@ -564,19 +564,19 @@ if data is not None and len(data) > 0:
     # 设置图形属性
     ax.set_xlabel('Z-Score', fontsize=14, fontweight='bold')
     ax.set_ylabel('Original Data ID', fontsize=14, fontweight='bold')
-    ax.set_title('Z-Score Distribution (Sorted)', fontsize=16, fontweight='bold', pad=30)  # 增加标题的pad值
+    ax.set_title('Z-Score Distribution (Sorted)', fontsize=16, fontweight='bold', pad=40)
     
     # 添加图例 - 放在图表上方，标题下方
     from matplotlib.patches import Patch
     legend_elements = [
-        Patch(facecolor=color_map['Satisfactory'], label='Satisfactory (|Z| ≤ 2)'),
-        Patch(facecolor=color_map['Questionable'], label='Questionable (2 < |Z| ≤ 3)'),
-        Patch(facecolor=color_map['Unsatisfactory'], label='Unsatisfactory (|Z| > 3)')
+        Patch(facecolor=color_map['Satisfactory'], alpha=0.6, label='Satisfactory (|Z| ≤ 2)'),
+        Patch(facecolor=color_map['Questionable'], alpha=0.6, label='Questionable (2 < |Z| ≤ 3)'),
+        Patch(facecolor=color_map['Unsatisfactory'], alpha=0.6, label='Unsatisfactory (|Z| > 3)')
     ]
     
     # 将图例放在图表上方，标题下方
-    ax.legend(handles=legend_elements, title='Category', title_fontsize=12, fontsize=11, 
-              loc='upper center', bbox_to_anchor=(0.5, 1.05), ncol=3, frameon=True)
+    legend = ax.legend(handles=legend_elements, title='Category', title_fontsize=12, fontsize=11, 
+                      loc='upper center', bbox_to_anchor=(0.5, 1.02), ncol=3, frameon=True)
     
     # 设置Y轴刻度 - 使用原始数据编号作为标签
     ax.set_yticks(y_positions)
@@ -588,8 +588,8 @@ if data is not None and len(data) > 0:
     # 添加阈值线
     ax.axvline(x=-2, color='gray', linestyle='--', alpha=0.7, linewidth=0.8)
     ax.axvline(x=2, color='gray', linestyle='--', alpha=0.7, linewidth=0.8)
-    ax.axvline(x=-3, color='red', linestyle='--', alpha=0.7, linewidth=0.8)  # 使用红色
-    ax.axvline(x=3, color='red', linestyle='--', alpha=0.7, linewidth=0.8)   # 使用红色
+    ax.axvline(x=-3, color='red', linestyle='--', alpha=0.7, linewidth=0.8)
+    ax.axvline(x=3, color='red', linestyle='--', alpha=0.7, linewidth=0.8)
     
     # 添加网格
     ax.grid(axis='x', alpha=0.3, linestyle='--')
@@ -601,7 +601,7 @@ if data is not None and len(data) > 0:
     ax.set_facecolor('white')
     
     # 调整子图参数，为顶部图例和标题留出更多空间
-    plt.subplots_adjust(top=0.85)  # 调整这个值直到图例不再遮挡柱状图
+    plt.subplots_adjust(top=0.88)
     
     # 调整布局
     plt.tight_layout()
