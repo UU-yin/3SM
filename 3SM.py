@@ -576,7 +576,7 @@ if data is not None and len(data) > 0:
     
     # 将图例放在图表上方，标题下方
     legend = ax.legend(handles=legend_elements, title='Category', title_fontsize=12, fontsize=11, 
-                      loc='upper center', bbox_to_anchor=(0.5, 0.98), ncol=3, frameon=True)
+                      loc='upper center', bbox_to_anchor=(0.5, 1.00), ncol=3, frameon=True)
     
     # 设置Y轴刻度 - 使用原始数据编号作为标签
     ax.set_yticks(y_positions)
