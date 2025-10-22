@@ -450,6 +450,10 @@ if data is not None and len(data) > 0:
     # 设置Y轴刻度 - 使用排序后的位置
     ax.set_yticks(range(len(df_sorted)))
     ax.set_yticklabels([f"Rank {i+1}" for i in range(len(df_sorted))])
+    
+    # 保留原始数据编号作为Y轴标签
+    ax.set_yticks(range(len(df_sorted)))
+    ax.set_yticklabels([f"Data {i}" for i in df_sorted.index])
 
     # 添加零线参考线
     ax.axvline(x=0, color='black', linestyle='-', alpha=0.5, linewidth=1)
