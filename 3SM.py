@@ -73,42 +73,40 @@ if input_method == "手动输入":
 elif input_method == "文件上传":
     st.subheader("📁 上传数据文件")
     
-    # 显示TXT文件格式示例和下载提示
-    st.info("📝 **TXT文件格式说明**")
-    st.markdown("""
-    **TXT文件格式要求：**
-    - 每行一个数值
-    - 支持整数和小数
-    - 空行会自动忽略
-    
-    **示例文件内容：**
-    ```
-    54.4
-    54.6
-    54.2
-    54.3
-    53.9
-    54.4
-    54.3
-    54.6
-    54.5
-    54.3
-    ```
-    """)
-    
-    # 提供示例文件下载 - 放在更显眼的位置
-    example_content = "54.4\n54.6\n54.2\n54.3\n53.9\n54.4\n54.3\n54.6\n54.5\n54.3"
-    st.download_button(
-        label="📥 下载示例TXT文件",
-        data=example_content,
-        file_name="example_data.txt",
-        mime="text/plain",
-        help="点击下载示例TXT文件，了解正确的数据格式"
-    )
-    
-    st.markdown("---")  # 添加分隔线
-    
+    # 首先放置文件上传器
     uploaded_file = st.file_uploader("选择CSV或TXT文件", type=['csv', 'txt'])
+    
+    # 然后在下方显示格式说明和示例
+    with st.expander("📝 查看文件格式说明和示例", expanded=False):
+        st.markdown("""
+        **TXT文件格式要求：**
+        - 每行一个数值
+        - 支持整数和小数
+        - 空行会自动忽略
+        
+        **CSV文件格式要求：**
+        - 第一列包含数值数据
+        - 可以有表头，也可以没有
+        
+        **示例文件内容：**
+        ```
+        54.4
+        54.6
+        54.2
+        54.3
+        53.9
+        ```
+        """)
+        
+        # 提供示例文件下载
+        example_content = "54.4\n54.6\n54.2\n54.3\n53.9"
+        st.download_button(
+            label="下载示例TXT文件",
+            data=example_content,
+            file_name="example_data.txt",
+            mime="text/plain",
+            help="点击下载示例TXT文件，了解正确的数据格式"
+        )
     
     if uploaded_file is not None:
         try:
@@ -128,7 +126,7 @@ elif input_method == "文件上传":
             
         except Exception as e:
             st.error(f"文件读取错误: {e}")
-            st.info("请确保文件格式正确：每行一个数值，且均为有效数字")           
+            st.info("请确保文件格式正确：每行一个数值，且均为有效数字")         
     
     if uploaded_file is not None:
         try:
@@ -621,3 +619,46 @@ st.markdown("""
 - **四分位稳健统计法**: 基于数据排序，使用中段50%数据，崩溃点25%
 - **Q/Hampel法**: 结合Q方法稳健标准差和Hampel方法稳健平均值
 """)
+
+# 在页面底部添加简化的反馈功能
+st.markdown("---")
+st.subheader("💬 用户反馈")
+
+# 创建反馈按钮
+if st.button("📧 联系技术支持"):
+    st.info("""
+    **技术支持**
+    
+    如果您在使用过程中遇到任何问题或有改进建议，请您邮件联系：
+    
+    📩 **xxx@163.com**
+    
+    **联系人**：印博士
+    
+    我们会在收到邮件后尽快回复您，感谢您的支持！
+    """)
+
+# 或者使用扩展器形式
+with st.expander("💬 有问题或建议？点击这里联系我们", expanded=False):
+    st.markdown("""
+    **技术支持与反馈**
+    
+    我们重视每一位用户的反馈，如果您遇到以下情况：
+    - 使用过程中遇到问题
+    - 有功能改进建议
+    - 发现数据计算异常
+    - 其他任何疑问
+    
+    请通过以下方式联系我们：
+    
+    📧 **邮箱**: ypan1104@163.com
+    
+    **👤 联系人**: x博士
+    
+    我们承诺：
+    - 24小时内回复您的邮件
+    - 认真考虑每一条建议
+    - 持续改进应用体验
+    
+    感谢您帮助我们变得更好！
+    """)
