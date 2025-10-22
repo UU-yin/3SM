@@ -61,8 +61,8 @@ if input_method == "手动输入":
     if 'data_history' not in st.session_state:
         st.session_state.data_history = [st.session_state.manual_data]
     
-    # 创建三列布局，将按钮放在右侧
-    col1, col2, col3 = st.columns([3, 1, 1])
+    # 创建两列布局，数据输入框在左侧，按钮在右侧上下排列
+    col1, col2 = st.columns([4, 1])
     
     with col1:
         data_input = st.text_area(
@@ -74,7 +74,7 @@ if input_method == "手动输入":
     
     with col2:
         st.write("")  # 垂直间距
-        st.write("")  # 垂直间距
+        
         # 撤销按钮 - 只有当有历史记录时才启用
         undo_disabled = len(st.session_state.data_history) <= 1
         if st.button("↶ 撤销", 
@@ -87,11 +87,9 @@ if input_method == "手动输入":
                 # 恢复到上一个状态
                 st.session_state.manual_data = st.session_state.data_history[-1]
                 st.rerun()
-    
-    with col3:
-        st.write("")  # 垂直间距
-        st.write("")  # 垂直间距
-        if st.button("🗑️ 清除", 
+        
+        # 清除按钮
+        if st.button("一键清除", 
                     use_container_width=True, 
                     type="secondary",
                     help="清空所有数据"):
@@ -109,28 +107,20 @@ if input_method == "手动输入":
             st.session_state.data_history = st.session_state.data_history[-10:]
         st.session_state.manual_data = data_input
     
-    # 创建两列布局，将分析按钮放在右侧
-    col4, col5 = st.columns([3, 1])
-    
-    with col5:
-        st.write("")  # 垂直间距
-        if st.button("分析数据", use_container_width=True, type="primary"):
-            try:
-                # 解析输入数据
-                if "\n" in data_input:
-                    data_list = [float(x.strip()) for x in data_input.split("\n") if x.strip()]
-                else:
-                    data_list = [float(x.strip()) for x in data_input.split(",") if x.strip()]
-                
-                data = np.array(data_list)
-                st.success(f"成功解析 {len(data)} 个数据点")
-                
-            except ValueError as e:
-                st.error("数据格式错误！请确保输入的是数字")
-    
-    # 显示历史记录信息（可选）
-    if len(st.session_state.data_history) > 1:
-        st.caption(f"可撤销步骤: {len(st.session_state.data_history)-1}")
+    # 在数据输入框下方放置分析按钮（左侧）
+    if st.button("分析数据", type="primary"):
+        try:
+            # 解析输入数据
+            if "\n" in data_input:
+                data_list = [float(x.strip()) for x in data_input.split("\n") if x.strip()]
+            else:
+                data_list = [float(x.strip()) for x in data_input.split(",") if x.strip()]
+            
+            data = np.array(data_list)
+            st.success(f"成功解析 {len(data)} 个数据点")
+            
+        except ValueError as e:
+            st.error("数据格式错误！请确保输入的是数字")
 
 elif input_method == "文件上传":
     st.subheader("📁 上传数据文件")
