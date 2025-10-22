@@ -410,9 +410,9 @@ if data is not None and len(data) > 0:
             return 'Unsatisfactory'
 
     df_clean['Category'] = df_clean.apply(classify_data, axis=1)
- 
-    # 按照Z值从大到小排序
-    df_sorted = df_clean.sort_values('Z_Score', ascending=False).reset_index(drop=True)
+
+    # 按照Z值从大到小排序，但保留原始索引
+    df_sorted = df_clean.sort_values('Z_Score', ascending=False)
 
     # 创建Z值柱状图
     fig, ax = plt.subplots(figsize=(14, 10))
@@ -428,7 +428,9 @@ if data is not None and len(data) > 0:
     colors = [color_map[cat] for cat in df_sorted['Category']]
 
     # 绘制所有数据点的柱状图，按Z值排序
-    bars = ax.barh(range(len(df_sorted)), 
+    # 使用排序后的索引位置作为Y轴位置
+    y_positions = range(len(df_sorted))
+    bars = ax.barh(y_positions, 
                    df_sorted['Z_Score'], 
                    color=colors, 
                    alpha=0.7, 
@@ -442,18 +444,14 @@ if data is not None and len(data) > 0:
                 ha='left' if bar.get_width() >= 0 else 'right', 
                 va='center', fontsize=9, fontweight='bold')
 
-     # 设置图形属性
+    # 设置图形属性
     ax.set_xlabel('Z-Score', fontsize=14, fontweight='bold')
-    ax.set_ylabel('Data Rank (Sorted by Z-Score)', fontsize=14, fontweight='bold')
+    ax.set_ylabel('Original Data ID', fontsize=14, fontweight='bold')
     ax.set_title('Z-Score Distribution (Sorted)', fontsize=16, fontweight='bold')
 
-    # 设置Y轴刻度 - 使用排序后的位置
-    ax.set_yticks(range(len(df_sorted)))
-    ax.set_yticklabels([f"Rank {i+1}" for i in range(len(df_sorted))])
-    
-    # 保留原始数据编号作为Y轴标签
-    ax.set_yticks(range(len(df_sorted)))
-    ax.set_yticklabels([f"Data {i}" for i in df_sorted.index])
+    # 设置Y轴刻度 - 使用原始数据编号作为标签
+    ax.set_yticks(y_positions)
+    ax.set_yticklabels([f"{idx}" for idx in df_sorted.index])
 
     # 添加零线参考线
     ax.axvline(x=0, color='black', linestyle='-', alpha=0.5, linewidth=1)
