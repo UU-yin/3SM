@@ -57,7 +57,7 @@ if input_method == "手动输入":
     if 'reset_counter' not in st.session_state:
         st.session_state.reset_counter = 0  # 用于控制文本区域key的计数器
     if 'manual_data' not in st.session_state:
-        st.session_state.manual_data = "54.4, 54.6, 54.2"  # 初始数据
+        st.session_state.manual_data = "54.4, 54.6, 54.2, 54.3, 53.9, 54.4, 54.3, 54.6, 54.5, 54.3, 54.5, 54.1, 54.2, 54.3, 54.8, 54.8, 54.8, 54.3, 54.4, 54.3, 54.3, 54.7, 54.4, 54.5, 54.4, 55.0, 55.0, 55.1, 54.1, 54.8, 54.5, 55.5, 55.6, 55.0, 54.3, 55.3, 54.3, 54.4, 54.3, 54.4, 54.5, 55.9, 53.2, 54.6"  # 初始数据
     if 'data_history' not in st.session_state:
         st.session_state.data_history = [st.session_state.manual_data]  # 历史记录
     if 'data_loaded' not in st.session_state:
