@@ -505,15 +505,12 @@ if data is not None and len(data) > 0:
     if len(data) >= 3 and len(data) <= 5000:  # Shapiro-Wilk检验的适用范围
         stat, p_value = shapiro(data)
         
-        # 使用两列布局将p值和提示放在同一行
-        col_p, col_warning = st.columns([1, 2])
-        with col_p:
-            st.write(f"正态性检验p值: {p_value:.4f}")
-        with col_warning:
-            if p_value > 0.05:
-                st.success("数据符合正态分布 (p > 0.05)")
-            else:
-                st.warning("数据可能不符合正态分布 (p ≤ 0.05)")
+        # 在同一列中上下排列
+        st.write(f"正态性检验p值: {p_value:.4f}")
+        if p_value > 0.05:
+            st.write(":green[数据符合正态分布 (p > 0.05)]")
+        else:
+            st.write(":red[数据可能不符合正态分布 (p ≤ 0.05)]")
     
     with dist_col2:
         # 创建数据分布图
