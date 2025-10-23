@@ -500,17 +500,17 @@ if data is not None and len(data) > 0:
         st.write(f"最大值: {np.max(data):.4f}")
         st.write(f"中位数: {np.median(data):.4f}")
         
-    # 正态性检验
-    from scipy.stats import shapiro
-    if len(data) >= 3 and len(data) <= 5000:  # Shapiro-Wilk检验的适用范围
-        stat, p_value = shapiro(data)
-        
-        # 在同一列中上下排列
-        st.write(f"正态性检验p值: {p_value:.4f}")
-        if p_value > 0.05:
-            st.write(":green[数据符合正态分布 (p > 0.05)]")
-        else:
-            st.write(":red[数据可能不符合正态分布 (p ≤ 0.05)]")
+        # 正态性检验 - 放在统计信息下方，图表上方
+        from scipy.stats import shapiro
+        if len(data) >= 3 and len(data) <= 5000:  # Shapiro-Wilk检验的适用范围
+            stat, p_value = shapiro(data)
+            
+            # 在同一列中上下排列，使用颜色编码
+            st.write(f"正态性检验p值: {p_value:.4f}")
+            if p_value > 0.05:
+                st.write(":green[数据符合正态分布 (p > 0.05)]")
+            else:
+                st.write(":red[数据可能不符合正态分布 (p ≤ 0.05)]")
     
     with dist_col2:
         # 创建数据分布图
