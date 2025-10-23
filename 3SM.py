@@ -50,9 +50,6 @@ input_method = st.radio("数据输入方式:",
                        ["手动输入", "文件上传", "示例数据"])
 data = None
 
-import streamlit as st
-import numpy as np
-
 if input_method == "手动输入":
     st.subheader("📝 手动输入数据")
     
@@ -488,6 +485,57 @@ if data is not None and len(data) > 0:
     st.markdown("---")
     st.subheader(f"📈 {method}分析结果")
     
+    # 新增：数据分布可视化
+    st.subheader("📊 输入数据分布")
+    
+    # 创建两列布局，左侧显示统计信息，右侧显示分布图
+    dist_col1, dist_col2 = st.columns([1, 2])
+    
+    with dist_col1:
+        st.write("**数据统计摘要:**")
+        st.write(f"数据点数: {len(data)}")
+        st.write(f"平均值: {np.mean(data):.4f}")
+        st.write(f"标准差: {np.std(data, ddof=1):.4f}")
+        st.write(f"最小值: {np.min(data):.4f}")
+        st.write(f"最大值: {np.max(data):.4f}")
+        st.write(f"中位数: {np.median(data):.4f}")
+        
+        # 正态性检验
+        from scipy.stats import shapiro
+        if len(data) >= 3 and len(data) <= 5000:  # Shapiro-Wilk检验的适用范围
+            stat, p_value = shapiro(data)
+            st.write(f"正态性检验p值: {p_value:.4f}")
+            if p_value > 0.05:
+                st.success("数据符合正态分布 (p > 0.05)")
+            else:
+                st.warning("数据可能不符合正态分布 (p ≤ 0.05)")
+    
+    with dist_col2:
+        # 创建数据分布图
+        fig_dist, ax_dist = plt.subplots(figsize=(10, 6))
+        
+        # 绘制直方图
+        n, bins, patches = ax_dist.hist(data, bins=15, alpha=0.7, color='skyblue', 
+                                       edgecolor='black', density=True, label='数据分布')
+        
+        # 绘制正态分布曲线
+        from scipy.stats import norm
+        xmin, xmax = ax_dist.get_xlim()
+        x = np.linspace(xmin, xmax, 100)
+        p = norm.pdf(x, np.mean(data), np.std(data, ddof=1))
+        ax_dist.plot(x, p, 'k', linewidth=2, label='正态分布')
+        
+        # 设置图形属性
+        ax_dist.set_title('输入数据分布与正态分布对比', fontsize=14, fontweight='bold')
+        ax_dist.set_xlabel('数据值', fontsize=12)
+        ax_dist.set_ylabel('概率密度', fontsize=12)
+        ax_dist.legend()
+        ax_dist.grid(alpha=0.3)
+        
+        plt.tight_layout()
+        st.pyplot(fig_dist)
+    
+    # 执行稳健统计分析
     with st.spinner(f"正在执行{method}分析..."):
         if method == "迭代稳健统计法":
             results = iterative_robust_algorithm(data, max_iterations=max_iter, k=k_value)
