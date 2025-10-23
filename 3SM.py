@@ -131,6 +131,14 @@ if input_method == "手动输入":
     # 如果数据已加载，设置全局 data 变量
     if st.session_state.data_loaded and 'data' in st.session_state:
         data = st.session_state.data
+        
+    # 调试信息（可选）
+    with st.expander("调试信息"):
+        st.write(f"manual_data: {st.session_state.manual_data}")
+        st.write(f"data_history 长度: {len(st.session_state.data_history)}")
+        st.write(f"data_loaded: {st.session_state.data_loaded}")
+        if 'data' in st.session_state:
+            st.write(f"data 长度: {len(st.session_state.data)}")        
 
 elif input_method == "文件上传":
     st.subheader("📁 上传数据文件")
