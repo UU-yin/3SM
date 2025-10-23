@@ -53,51 +53,93 @@ data = None
 if input_method == "手动输入":
     st.subheader("📝 手动输入数据")
     
-    # 初始化会话状态
+    # 初始化所有必要的会话状态
+    if 'reset_counter' not in st.session_state:
+        st.session_state.reset_counter = 0  # 用于控制文本区域key的计数器
     if 'manual_data' not in st.session_state:
-        st.session_state.manual_data = "您的默认数据"
+        st.session_state.manual_data = "54.4, 54.6, 54.2"  # 初始数据
     if 'data_history' not in st.session_state:
-        st.session_state.data_history = [st.session_state.manual_data]
-
-    # 主表单 - 用于数据输入和主要操作
-    with st.form("main_form"):
-        data_input = st.text_area(
-            "请输入数据（每行一个数值或用逗号分隔）:", 
-            value=st.session_state.manual_data,
-            height=150,
-            key="manual_input"
-        )
-        
-        # 表单提交按钮
-        submitted = st.form_submit_button("分析数据")
-        if submitted:
-            try:
-                # 解析和处理数据的代码
-                st.session_state.data_loaded = True
-                st.success("数据解析成功！")
-            except ValueError:
-                st.error("数据格式错误！")
-
-    # 表单外的独立按钮 - 用于清除和撤销操作
-    col1, col2 = st.columns(2)
+        st.session_state.data_history = [st.session_state.manual_data]  # 历史记录
+    if 'data_loaded' not in st.session_state:
+        st.session_state.data_loaded = False
+    if 'processed_data' not in st.session_state:
+        st.session_state.processed_data = None
+    
+    # 创建文本输入框，其key依赖于reset_counter
+    current_data = st.text_area(
+        "请输入数据（每行一个数值或用逗号分隔）:",
+        value=st.session_state.manual_data,
+        height=150,
+        key=f"manual_input_{st.session_state.reset_counter}"  # 关键：key随计数器变化
+    )
+    
+    # 更新当前数据到session_state
+    if current_data != st.session_state.manual_data:
+        st.session_state.data_history.append(st.session_state.manual_data)
+        # 限制历史记录长度
+        if len(st.session_state.data_history) > 10:
+            st.session_state.data_history = st.session_state.data_history[-10:]
+        st.session_state.manual_data = current_data
+    
+    # 创建操作按钮
+    col1, col2, col3 = st.columns([2, 1, 1])
+    
+    def clear_data():
+        """一键清除数据的回调函数"""
+        if st.session_state.manual_data:
+            st.session_state.data_history.append(st.session_state.manual_data)
+        st.session_state.manual_data = ""
+        st.session_state.data_loaded = False
+        st.session_state.processed_data = None
+        st.session_state.reset_counter += 1  # 关键：改变计数器以重置文本区域
+    
+    def undo_data():
+        """撤销操作的回调函数"""
+        if len(st.session_state.data_history) > 1:
+            st.session_state.data_history.pop()
+            st.session_state.manual_data = st.session_state.data_history[-1]
+            st.session_state.data_loaded = False
+            st.session_state.processed_data = None
+            st.session_state.reset_counter += 1  # 关键：改变计数器以重置文本区域
+    
+    def analyze_data():
+        """分析数据的回调函数"""
+        try:
+            if "\n" in st.session_state.manual_data:
+                data_list = [float(x.strip()) for x in st.session_state.manual_data.split("\n") if x.strip()]
+            else:
+                data_list = [float(x.strip()) for x in st.session_state.manual_data.split(",") if x.strip()]
+            
+            st.session_state.processed_data = np.array(data_list)
+            st.session_state.data_loaded = True
+            st.success(f"成功解析 {len(st.session_state.processed_data)} 个数据点")
+        except ValueError as e:
+            st.error("数据格式错误！请确保输入的是数字")
     
     with col1:
-        if st.button("一键清除", use_container_width=True):
-            # 保存当前状态到历史记录
-            if st.session_state.manual_data:
-                st.session_state.data_history.append(st.session_state.manual_data)
-            st.session_state.manual_data = ""
-            st.session_state.data_loaded = False
-            st.rerun()  # 强制刷新页面
+        st.button("分析数据", 
+                  use_container_width=True, 
+                  type="primary",
+                  on_click=analyze_data)
     
     with col2:
+        st.button("一键清除", 
+                  use_container_width=True, 
+                  type="secondary",
+                  help="清空所有数据",
+                  on_click=clear_data)
+    
+    with col3:
         undo_disabled = len(st.session_state.data_history) <= 1
-        if st.button("↶ 撤销", disabled=undo_disabled, use_container_width=True):
-            if len(st.session_state.data_history) > 1:
-                st.session_state.data_history.pop()
-                st.session_state.manual_data = st.session_state.data_history[-1]
-                st.session_state.data_loaded = False
-                st.rerun()  # 强制刷新页面
+        st.button("? 撤销", 
+                  use_container_width=True, 
+                  disabled=undo_disabled,
+                  help="恢复到上一次的数据状态",
+                  on_click=undo_data)
+    
+    # 将处理后的数据传递给应用的其余部分
+    if st.session_state.data_loaded and st.session_state.processed_data is not None:
+        data = st.session_state.processed_data   
 
 elif input_method == "文件上传":
     st.subheader("📁 上传数据文件")
