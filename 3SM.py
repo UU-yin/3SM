@@ -516,19 +516,19 @@ if data is not None and len(data) > 0:
         
         # 绘制直方图
         n, bins, patches = ax_dist.hist(data, bins=15, alpha=0.7, color='skyblue', 
-                                       edgecolor='black', density=True, label='数据分布')
+                                       edgecolor='black', density=True, label='Data Distribution')
         
         # 绘制正态分布曲线
         from scipy.stats import norm
         xmin, xmax = ax_dist.get_xlim()
         x = np.linspace(xmin, xmax, 100)
         p = norm.pdf(x, np.mean(data), np.std(data, ddof=1))
-        ax_dist.plot(x, p, 'k', linewidth=2, label='正态分布')
+        ax_dist.plot(x, p, 'k', linewidth=2, label='Normal Distribution Curve')
         
         # 设置图形属性
-        ax_dist.set_title('输入数据分布与正态分布对比', fontsize=14, fontweight='bold')
-        ax_dist.set_xlabel('数据值', fontsize=12)
-        ax_dist.set_ylabel('概率密度', fontsize=12)
+        ax_dist.set_title('Normal‐Probability Benchmarking of Input Data', fontsize=14, fontweight='bold')
+        ax_dist.set_xlabel('Data Value', fontsize=12)
+        ax_dist.set_ylabel('Probability Density', fontsize=12)
         ax_dist.legend()
         ax_dist.grid(alpha=0.3)
         
