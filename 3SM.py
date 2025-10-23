@@ -50,58 +50,79 @@ input_method = st.radio("数据输入方式:",
                        ["手动输入", "文件上传", "示例数据"])
 data = None
 
+import streamlit as st
+import numpy as np
+
 if input_method == "手动输入":
     st.subheader("📝 手动输入数据")
     
     # 初始化所有必要的会话状态
-    if 'reset_counter' not in st.session_state:
-        st.session_state.reset_counter = 0  # 用于控制文本区域key的计数器
     if 'manual_data' not in st.session_state:
-        st.session_state.manual_data = "54.4, 54.6, 54.2, 54.3, 53.9, 54.4, 54.3, 54.6, 54.5, 54.3, 54.5, 54.1, 54.2, 54.3, 54.8, 54.8, 54.8, 54.3, 54.4, 54.3, 54.3, 54.7, 54.4, 54.5, 54.4, 55.0, 55.0, 55.1, 54.1, 54.8, 54.5, 55.5, 55.6, 55.0, 54.3, 55.3, 54.3, 54.4, 54.3, 54.4, 54.5, 55.9, 53.2, 54.6"  # 初始数据
+        st.session_state.manual_data = "54.4, 54.6, 54.2, 54.3, 53.9, 54.4, 54.3, 54.6, 54.5, 54.3, 54.5, 54.1, 54.2, 54.3, 54.8, 54.8, 54.8, 54.3, 54.4, 54.3, 54.3, 54.7, 54.4, 54.5, 54.4, 55.0, 55.0, 55.1, 54.1, 54.8, 54.5, 55.5, 55.6, 55.0, 54.3, 55.3, 54.3, 54.4, 54.3, 54.4, 54.5, 55.9, 53.2, 54.6"
+    
+    # 关键修复：确保历史记录正确初始化
     if 'data_history' not in st.session_state:
-        st.session_state.data_history = [st.session_state.manual_data]  # 历史记录
+        # 只保存初始状态，不重复保存
+        st.session_state.data_history = []
+    
     if 'data_loaded' not in st.session_state:
         st.session_state.data_loaded = False
+    
     if 'processed_data' not in st.session_state:
         st.session_state.processed_data = None
-    
+        
+    if 'reset_counter' not in st.session_state:
+        st.session_state.reset_counter = 0
+
     # 创建文本输入框，其key依赖于reset_counter
     current_data = st.text_area(
         "请输入数据（每行一个数值或用逗号分隔）:",
         value=st.session_state.manual_data,
         height=150,
-        key=f"manual_input_{st.session_state.reset_counter}"  # 关键：key随计数器变化
+        key=f"manual_input_{st.session_state.reset_counter}"
     )
-    
-    # 更新当前数据到session_state
+
+    # 更新session_state中的数据 - 关键修复
     if current_data != st.session_state.manual_data:
-        st.session_state.data_history.append(st.session_state.manual_data)
-        # 限制历史记录长度
-        if len(st.session_state.data_history) > 10:
-            st.session_state.data_history = st.session_state.data_history[-10:]
+        # 只有当数据真正变化且不是空字符串时才保存到历史记录
+        if st.session_state.manual_data and current_data != st.session_state.manual_data:
+            # 保存当前状态到历史记录
+            st.session_state.data_history.append(st.session_state.manual_data)
+            # 限制历史记录长度，避免内存问题
+            if len(st.session_state.data_history) > 10:
+                st.session_state.data_history = st.session_state.data_history[-10:]
+        
+        # 更新当前数据
         st.session_state.manual_data = current_data
-    
+
     # 创建操作按钮
     col1, col2, col3 = st.columns([2, 1, 1])
-    
+
     def clear_data():
         """一键清除数据的回调函数"""
-        if st.session_state.manual_data:
+        # 保存当前状态到历史记录（只有在有内容时）
+        if st.session_state.manual_data and st.session_state.manual_data.strip():
             st.session_state.data_history.append(st.session_state.manual_data)
+        
         st.session_state.manual_data = ""
         st.session_state.data_loaded = False
         st.session_state.processed_data = None
-        st.session_state.reset_counter += 1  # 关键：改变计数器以重置文本区域
-    
+        st.session_state.reset_counter += 1  # 改变计数器以重置文本区域
+
     def undo_data():
         """撤销操作的回调函数"""
-        if len(st.session_state.data_history) > 1:
-            st.session_state.data_history.pop()
-            st.session_state.manual_data = st.session_state.data_history[-1]
+        # 关键修复：检查历史记录是否为空
+        if st.session_state.data_history:
+            # 从历史记录中获取上一个状态
+            previous_data = st.session_state.data_history.pop()
+            st.session_state.manual_data = previous_data
             st.session_state.data_loaded = False
             st.session_state.processed_data = None
-            st.session_state.reset_counter += 1  # 关键：改变计数器以重置文本区域
-    
+            st.session_state.reset_counter += 1  # 改变计数器以重置文本区域
+        else:
+            # 如果没有历史记录，至少重置计数器以刷新界面
+            st.session_state.reset_counter += 1
+
     def analyze_data():
         """分析数据的回调函数"""
         try:
@@ -115,31 +136,38 @@ if input_method == "手动输入":
             st.success(f"成功解析 {len(st.session_state.processed_data)} 个数据点")
         except ValueError as e:
             st.error("数据格式错误！请确保输入的是数字")
-    
+
     with col1:
         st.button("分析数据", 
                   use_container_width=True, 
                   type="primary",
                   on_click=analyze_data)
-    
+
     with col2:
         st.button("一键清除", 
                   use_container_width=True, 
                   type="secondary",
                   help="清空所有数据",
                   on_click=clear_data)
-    
+
     with col3:
-        undo_disabled = len(st.session_state.data_history) <= 1
+        undo_disabled = len(st.session_state.data_history) == 0
         st.button("↶ 撤销", 
                   use_container_width=True, 
                   disabled=undo_disabled,
                   help="恢复到上一次的数据状态",
                   on_click=undo_data)
     
+    # 调试信息 - 帮助诊断问题
+    with st.expander("调试信息"):
+        st.write(f"当前数据: {st.session_state.manual_data}")
+        st.write(f"历史记录长度: {len(st.session_state.data_history)}")
+        st.write(f"历史记录内容: {st.session_state.data_history}")
+        st.write(f"重置计数器: {st.session_state.reset_counter}")
+
     # 将处理后的数据传递给应用的其余部分
     if st.session_state.data_loaded and st.session_state.processed_data is not None:
-        data = st.session_state.processed_data   
+        data = st.session_state.processed_data 
 
 elif input_method == "文件上传":
     st.subheader("📁 上传数据文件")
