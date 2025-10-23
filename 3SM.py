@@ -50,95 +50,54 @@ input_method = st.radio("数据输入方式:",
                        ["手动输入", "文件上传", "示例数据"])
 data = None
 
-import streamlit as st
-
 if input_method == "手动输入":
     st.subheader("📝 手动输入数据")
     
-    # 初始化所有必要的会话状态
+    # 初始化会话状态
     if 'manual_data' not in st.session_state:
-        st.session_state.manual_data = "54.4, 54.6, 54.2, 54.3, 53.9, 54.4, 54.3, 54.6, 54.5, 54.3, 54.5, 54.1, 54.2, 54.3, 54.8, 54.8, 54.8, 54.3, 54.4, 54.3, 54.3, 54.7, 54.4, 54.5, 54.4, 55.0, 55.0, 55.1, 54.1, 54.8, 54.5, 55.5, 55.6, 55.0, 54.3, 55.3, 54.3, 54.4, 54.3, 54.4, 54.5, 55.9, 53.2, 54.6"
+        st.session_state.manual_data = "您的默认数据"
     if 'data_history' not in st.session_state:
         st.session_state.data_history = [st.session_state.manual_data]
-    if 'data_loaded' not in st.session_state:
-        st.session_state.data_loaded = False
-    # 新增：确保存储解析后数据的session_state也被初始化
-    if 'processed_data' not in st.session_state:
-        st.session_state.processed_data = None
 
-    # 数据输入框
-    data_input = st.text_area(
-        "请输入数据（每行一个数值或用逗号分隔）:",
-        value=st.session_state.manual_data,
-        height=150,
-        key="manual_input"  # 确保key唯一且正确
-    )
+    # 主表单 - 用于数据输入和主要操作
+    with st.form("main_form"):
+        data_input = st.text_area(
+            "请输入数据（每行一个数值或用逗号分隔）:", 
+            value=st.session_state.manual_data,
+            height=150,
+            key="manual_input"
+        )
+        
+        # 表单提交按钮
+        submitted = st.form_submit_button("分析数据")
+        if submitted:
+            try:
+                # 解析和处理数据的代码
+                st.session_state.data_loaded = True
+                st.success("数据解析成功！")
+            except ValueError:
+                st.error("数据格式错误！")
 
-    # 更新session_state中的数据
-    if data_input != st.session_state.manual_data:
-        st.session_state.data_history.append(st.session_state.manual_data)
-        if len(st.session_state.data_history) > 10:
-            st.session_state.data_history = st.session_state.data_history[-10:]
-        st.session_state.manual_data = data_input
-
-    # 创建三列布局
-    col1, col2, col3 = st.columns([2, 1, 1])
-
-    # 回调函数定义
-    def clear_data():
-        # 保存当前状态到历史记录
-        if st.session_state.manual_data:
-            st.session_state.data_history.append(st.session_state.manual_data)
-        st.session_state.manual_data = ""
-        st.session_state.data_loaded = False
-        st.session_state.processed_data = None  # 新增：清除已处理的数据
-
-    def undo_data():
-        if len(st.session_state.data_history) > 1:
-            st.session_state.data_history.pop()
-            st.session_state.manual_data = st.session_state.data_history[-1]
-            st.session_state.data_loaded = False
-            st.session_state.processed_data = None  # 新增：清除已处理的数据
-
-    def analyze_data():
-        try:
-            if "\n" in st.session_state.manual_data:
-                data_list = [float(x.strip()) for x in st.session_state.manual_data.split("\n") if x.strip()]
-            else:
-                data_list = [float(x.strip()) for x in st.session_state.manual_data.split(",") if x.strip()]
-            
-            # 将处理好的数据存入session_state，而不仅仅是局部变量
-            st.session_state.processed_data = np.array(data_list)
-            st.session_state.data_loaded = True
-            st.success(f"成功解析 {len(st.session_state.processed_data)} 个数据点")
-        except ValueError as e:
-            st.error("数据格式错误！请确保输入的是数字")
-
-    # 在按钮中使用on_click参数
+    # 表单外的独立按钮 - 用于清除和撤销操作
+    col1, col2 = st.columns(2)
+    
     with col1:
-        st.button("分析数据",
-                  use_container_width=True,
-                  type="primary",
-                  on_click=analyze_data)
-
+        if st.button("一键清除", use_container_width=True):
+            # 保存当前状态到历史记录
+            if st.session_state.manual_data:
+                st.session_state.data_history.append(st.session_state.manual_data)
+            st.session_state.manual_data = ""
+            st.session_state.data_loaded = False
+            st.rerun()  # 强制刷新页面
+    
     with col2:
-        st.button("一键清除",
-                  use_container_width=True,
-                  type="secondary",
-                  help="清空所有数据",
-                  on_click=clear_data)
-
-    with col3:
         undo_disabled = len(st.session_state.data_history) <= 1
-        st.button("↶ 撤销",
-                  use_container_width=True,
-                  disabled=undo_disabled,
-                  help="恢复到上一次的数据状态",
-                  on_click=undo_data)
-
-    # 关键：将session_state中的数据赋给全局变量data，供后续分析使用
-    if st.session_state.data_loaded and st.session_state.processed_data is not None:
-        data = st.session_state.processed_data 
+        if st.button("↶ 撤销", disabled=undo_disabled, use_container_width=True):
+            if len(st.session_state.data_history) > 1:
+                st.session_state.data_history.pop()
+                st.session_state.manual_data = st.session_state.data_history[-1]
+                st.session_state.data_loaded = False
+                st.rerun()  # 强制刷新页面
 
 elif input_method == "文件上传":
     st.subheader("📁 上传数据文件")
