@@ -131,7 +131,7 @@ if input_method == "手动输入":
     
     with col3:
         undo_disabled = len(st.session_state.data_history) <= 1
-        st.button("? 撤销", 
+        st.button("↶ 撤销", 
                   use_container_width=True, 
                   disabled=undo_disabled,
                   help="恢复到上一次的数据状态",
