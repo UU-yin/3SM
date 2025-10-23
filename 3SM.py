@@ -65,35 +65,30 @@ if input_method == "手动输入":
     if 'data_loaded' not in st.session_state:
         st.session_state.data_loaded = False
     
-    # 数据输入框
-    data_input = st.text_area(
+    # 数据输入框 - 直接绑定到 session_state
+    st.session_state.manual_data = st.text_area(
         "请输入数据（每行一个数值或用逗号分隔）:", 
         value=st.session_state.manual_data,
         height=150,
         key="manual_input"
     )
     
-    # 更新session_state中的数据
-    if data_input != st.session_state.manual_data:
-        # 如果数据有变化，保存到历史记录
-        st.session_state.data_history.append(st.session_state.manual_data)
-        # 限制历史记录长度，避免内存问题
-        if len(st.session_state.data_history) > 10:
-            st.session_state.data_history = st.session_state.data_history[-10:]
-        st.session_state.manual_data = data_input
-    
     # 创建三列布局，按照您要求的顺序排列按钮
     col1, col2, col3 = st.columns([2, 1, 1])
     
-    # 替代方案：使用回调函数
+    # 定义回调函数
     def clear_data():
-        st.session_state.data_history.append(st.session_state.manual_data)
+        # 保存当前状态到历史记录
+        if st.session_state.manual_data:  # 只有当有内容时才保存
+            st.session_state.data_history.append(st.session_state.manual_data)
         st.session_state.manual_data = ""
         st.session_state.data_loaded = False
     
     def undo_data():
         if len(st.session_state.data_history) > 1:
+            # 移除当前状态
             st.session_state.data_history.pop()
+            # 恢复到上一个状态
             st.session_state.manual_data = st.session_state.data_history[-1]
             st.session_state.data_loaded = False
     
@@ -104,9 +99,10 @@ if input_method == "手动输入":
             else:
                 data_list = [float(x.strip()) for x in st.session_state.manual_data.split(",") if x.strip()]
             
-            data = np.array(data_list)
+            # 将数据存储到 session_state 中，供后续分析使用
+            st.session_state.data = np.array(data_list)
             st.session_state.data_loaded = True
-            st.success(f"成功解析 {len(data)} 个数据点")
+            st.success(f"成功解析 {len(st.session_state.data)} 个数据点")
         except ValueError as e:
             st.error("数据格式错误！请确保输入的是数字")
     
@@ -132,17 +128,9 @@ if input_method == "手动输入":
                   help="恢复到上一次的数据状态",
                   on_click=undo_data)
     
-    # 如果数据已加载，设置data变量
-    if st.session_state.data_loaded:
-        try:
-            if "\n" in st.session_state.manual_data:
-                data_list = [float(x.strip()) for x in st.session_state.manual_data.split("\n") if x.strip()]
-            else:
-                data_list = [float(x.strip()) for x in st.session_state.manual_data.split(",") if x.strip()]
-            
-            data = np.array(data_list)
-        except:
-            st.session_state.data_loaded = False
+    # 如果数据已加载，设置全局 data 变量
+    if st.session_state.data_loaded and 'data' in st.session_state:
+        data = st.session_state.data
 
 elif input_method == "文件上传":
     st.subheader("📁 上传数据文件")
